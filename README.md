@@ -206,7 +206,7 @@ Play AI is free, but OpenAI API calls may incur costs. See OpenAI’s [pricing](
 Play AI simplifies Playwright automation using natural language commands, making test creation faster and more intuitive. 🚀
 
 <details>
-  <summary>Zero Step License</summary>
+  <summary>Play-AI License</summary>
 
 ```
 MIT License
