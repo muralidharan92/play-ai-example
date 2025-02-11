@@ -7,7 +7,7 @@ Run Playwright tests efficiently using AI.
 1. Install the `play-ai` package as a development dependency:
 
 ```bash
-npm install play-ai -D
+npm install -D play-ai
 ```
 
 2. Set up OpenAI API key:
@@ -84,8 +84,6 @@ test.describe("Playwright Integration With AI Suite", () => {
   });
 
   test("PW With AI Test With Nested Task", async ({ page }) => {
-    // await page.goto("https://www.saucedemo.com/");
-
     await play(
       [
         `Type "standard_user" in the Username field`,
@@ -114,9 +112,17 @@ test.describe("Playwright Integration With AI Suite", () => {
 });
 ```
 
+## Execute
+
+To execute run the following command:
+
+```sh
+npm run test
+```
+
 ## Usage
 
-Execute Playwright actions using plain text commands:
+Derive Playwright actions using plain text commands:
 
 ```ts
 play("<your prompt>", { page, test });
@@ -133,7 +139,7 @@ await play("Retrieve the header text", { page, test }, { debug: true });
 or set:
 
 ```bash
-export AUTO_PLAYWRIGHT_DEBUG=true
+export PLAY_AI_DEBUG=true
 ```
 
 ## Supported Browsers
@@ -145,7 +151,7 @@ Play AI supports all Playwright-compatible browsers.
 ```ts
 const options = {
   debug: true,
-  model: "gpt-4-1106-preview",
+  model: "gpt-4O",
   openaiApiKey: "sk-...",
 };
 ```
@@ -185,7 +191,7 @@ Play AI is free, but OpenAI API calls may incur costs. See OpenAI’s [pricing](
 
 ## Related Projects
 
-| Criteria                                                                              | play-ai | Auto Playwright | ZeroStep  |
+| Criteria                                                                              | Play-AI | Auto Playwright | ZeroStep  |
 | ------------------------------------------------------------------------------------- | ------- | --------------- | --------- |
 | Uses OpenAI API                                                                       | ✅ Yes  | ✅ Yes          | ❌ No[^3] |
 | Uses plain-text prompts                                                               | ✅ Yes  | ✅ Yes          | ❌ No     |
