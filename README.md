@@ -6,6 +6,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 
 - **Multi-Provider Support**: OpenAI, Anthropic Claude, Google Gemini, Ollama
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
+- **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
 - **Snapshot Strategies**: Full page, targeted extraction, auto selection
 - **Command Chaining**: Single and batched commands
@@ -283,6 +284,49 @@ test.describe("Auth Tests", () => {
 | Speed | ~2-5s/action | **~50ms/action** |
 | Dependencies | play-ai | **None** |
 
+## Auto-Healing Selectors
+
+When selectors break in generated tests, Play AI automatically fixes them using AI.
+
+### Method 1: Automatic (During Test Run)
+
+```bash
+# Run tests with auto-healing enabled
+PLAY_AI_HEALING=true npx playwright test generated/
+```
+
+### Method 2: CLI (Manual)
+
+```bash
+# Heal all selectors in a file
+npx play-ai heal ./generated/login.spec.ts
+
+# Heal with debug and backup
+npx play-ai heal ./generated/login.spec.ts --debug --backup
+
+# Dry run (check without modifying)
+npx play-ai heal ./generated/*.spec.ts --dry-run
+```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--line, -l <n>` | Heal specific line only |
+| `--url, -u <url>` | URL to navigate to |
+| `--backup, -b` | Create backup before modifying |
+| `--report, -r` | Generate healing report |
+| `--dry-run` | Check without modifying files |
+| `--debug, -d` | Enable debug output |
+
+### Benefits
+
+| | Without Healing | With Auto-Healing |
+|---|-----------------|-------------------|
+| Selector breaks | Manual fix needed | Auto-fixed |
+| Maintenance | High effort | Low effort |
+| CI/CD | Flaky tests | Self-healing |
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -293,6 +337,8 @@ test.describe("Auth Tests", () => {
 | `PLAY_AI_WORKERS` | Number of parallel workers | `4` |
 | `PLAY_AI_GENERATE_CODE` | Enable code generation mode | `true` |
 | `PLAY_AI_CODE_OUTPUT_DIR` | Output directory for generated tests | `./generated` |
+| `PLAY_AI_HEALING` | Enable auto-healing during test runs | `true` |
+| `PLAY_AI_HEALING_DEBUG` | Enable healing debug output | `true` |
 | `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
 | `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
 | `GEMINI_API_KEY` | Google Gemini API key | `...` |
