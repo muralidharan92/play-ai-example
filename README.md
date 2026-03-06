@@ -5,6 +5,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 ## Features
 
 - **Multi-Provider Support**: OpenAI, Anthropic Claude, Google Gemini, Ollama
+- **Parallel Execution**: Extract multiple data points concurrently
 - **Snapshot Strategies**: Full page, targeted extraction, auto selection
 - **Command Chaining**: Single and batched commands
 - **Data Extraction**: Querying page content with natural language
@@ -51,7 +52,7 @@ PLAY_AI_PROVIDER=ollama npm test
 ### Basic Usage
 
 ```typescript
-import { play } from "play-ai";
+import { play, playParallel, playParallelWithLimit } from "play-ai";
 
 await play("Click the Login button", { page, test });
 ```
@@ -150,12 +151,70 @@ await play("Click Login", { page, test }, {
 });
 ```
 
+## Parallel Execution
+
+Extract multiple data points concurrently for improved performance.
+
+### Basic Parallel Execution
+
+```typescript
+import { playParallel } from "play-ai";
+
+const results = await playParallel(
+    [
+        "get the header logo text",
+        "get the first product name",
+        "get the cart count"
+    ],
+    { page, test }
+);
+
+console.log(results[0].result); // "Swag Labs"
+console.log(results[1].result); // "Sauce Labs Backpack"
+```
+
+### Parallel with Concurrency Limit
+
+```typescript
+import { playParallelWithLimit } from "play-ai";
+
+const results = await playParallelWithLimit(
+    ["task1", "task2", "task3", "task4"],
+    { page, test },
+    { concurrency: 2 } // Max 2 concurrent tasks
+);
+```
+
+### Parallel Result Structure
+
+```typescript
+interface ParallelResult {
+    index: number;     // Position in original array
+    task: string;      // The task that was executed
+    success: boolean;  // Whether task succeeded
+    result?: unknown;  // Result value if successful
+    error?: string;    // Error message if failed
+}
+```
+
+### When to Use Parallel Execution
+
+| Use Case | Recommended |
+|----------|-------------|
+| Extracting multiple independent data points | ✅ Yes |
+| Running multiple read-only queries | ✅ Yes |
+| Validating multiple elements | ✅ Yes |
+| Sequential actions (fill → click → verify) | ❌ No |
+| Actions that depend on each other | ❌ No |
+
 ## Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `PLAY_AI_PROVIDER` | AI provider to use | `openai`, `anthropic`, `gemini`, `ollama` |
 | `PLAY_AI_DEBUG` | Enable debug logging | `true` |
+| `PLAY_AI_PARALLEL` | Enable parallel test execution | `true`, `false` |
+| `PLAY_AI_WORKERS` | Number of parallel workers | `4` |
 | `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
 | `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
 | `GEMINI_API_KEY` | Google Gemini API key | `...` |
@@ -178,10 +237,15 @@ tests/
     │   ├── Google Gemini provider
     │   └── Ollama local provider
     │
-    └── Snapshot Strategy Examples
-        ├── Full page snapshot
-        ├── Targeted snapshot
-        └── Auto snapshot
+    ├── Snapshot Strategy Examples
+    │   ├── Full page snapshot
+    │   ├── Targeted snapshot
+    │   └── Auto snapshot
+    │
+    └── Parallel Execution Examples
+        ├── Extract multiple data points in parallel
+        ├── Parallel execution with concurrency limit
+        └── Parallel execution with error handling
 ```
 
 ## Supported Actions
@@ -201,7 +265,9 @@ tests/
 - `locator.isChecked` / `locator.isEditable` / `locator.isEnabled` / `locator.isVisible` - State checks
 - `locator.hover` - Hover on element
 - `locator.dblclick` - Double click
-- `locator.scrollIntoView` - Scroll element into view
+- `locator.scrollIntoView` / `locator.scrollIntoViewIfNeeded` - Scroll element into view
+- `locator.waitForPageLoad` - Wait for page to load
+- `locator.expectToBe` / `locator.expectNotToBe` - Assertions
 
 ## Debugging
 
