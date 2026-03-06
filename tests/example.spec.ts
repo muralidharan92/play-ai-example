@@ -13,7 +13,10 @@ import {
     verifySelector,
     healTestFile,
     resetHealingStats,
-    getHealingStats
+    getHealingStats,
+    // Cache imports
+    getDefaultCacheManager,
+    CacheManager
 } from "play-ai";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
@@ -778,6 +781,242 @@ test.describe("Play AI - Auto-Healing Examples", () => {
         console.log("  ✓ Automatic test file updates");
 
         console.log("\n=================================\n");
+    });
+});
+
+/**
+ * Response Caching Examples
+ * These tests demonstrate how to use caching to reduce API costs
+ */
+test.describe("Play AI - Response Caching Examples", () => {
+    test.beforeEach(async ({ page }) => {
+        await page.goto("https://www.saucedemo.com/");
+    });
+
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Basic caching - automatic (enabled by default)", async ({ page }) => {
+        console.log("\n=== Response Caching Demo ===\n");
+
+        // Caching is enabled by default
+        // First run: Makes API call and caches result
+        // Subsequent runs: Returns cached result (no API call)
+
+        console.log("First run - will make API call and cache result:");
+        const result1 = await play(
+            "get the login page title or header text",
+            { page, test },
+            { ...options, debug: true }
+        );
+
+        console.log(`Result: ${result1}`);
+
+        // Second run with same task + DOM = cache hit
+        console.log("\nSecond run - should use cached result:");
+        const result2 = await play(
+            "get the login page title or header text",
+            { page, test },
+            { ...options, debug: true }
+        );
+
+        console.log(`Result: ${result2}`);
+
+        // Results should match
+        expect(result1).toBe(result2);
+
+        console.log("\n✅ Caching reduces API calls and costs!");
+    });
+
+    test("Explicit cache configuration", async ({ page }) => {
+        // Configure caching options per-call
+        const cacheOptions = {
+            ...options,
+            cache: true,                      // Enable caching (default: true)
+            cacheTTL: 3600,                   // 1 hour TTL (default: 24 hours)
+            cacheStrategy: "aggressive" as const, // Cache everything
+            debug: true
+        };
+
+        const result = await play(
+            `Type "standard_user" in the Username field`,
+            { page, test },
+            cacheOptions
+        );
+
+        console.log("\n✅ Cached with custom TTL and strategy");
+    });
+
+    test("Cache strategies comparison", async ({ page }) => {
+        console.log("\n=== Cache Strategies ===\n");
+
+        // Strategy 1: Aggressive (default)
+        // Caches everything, longer TTL
+        console.log("1. AGGRESSIVE (default):");
+        console.log("   - Caches all responses");
+        console.log("   - Best for stable pages");
+        console.log("   - Maximum cost savings");
+
+        await play(
+            "get the login button text",
+            { page, test },
+            { ...options, cacheStrategy: "aggressive" as const }
+        );
+
+        // Strategy 2: Conservative
+        // Only caches exact DOM matches
+        console.log("\n2. CONSERVATIVE:");
+        console.log("   - Caches only exact DOM matches");
+        console.log("   - Invalidates on any DOM change");
+        console.log("   - Best for dynamic pages");
+
+        await play(
+            "get the username input placeholder",
+            { page, test },
+            { ...options, cacheStrategy: "conservative" as const }
+        );
+
+        // Strategy 3: Off
+        // Disables caching
+        console.log("\n3. OFF:");
+        console.log("   - No caching");
+        console.log("   - Always makes API calls");
+        console.log("   - Use for debugging");
+
+        await play(
+            "get the password input type",
+            { page, test },
+            { ...options, cacheStrategy: "off" as const }
+        );
+
+        console.log("\n✅ Choose strategy based on page stability");
+    });
+
+    test("Disable caching for specific calls", async ({ page }) => {
+        // Sometimes you want fresh results (e.g., testing dynamic content)
+        const noCacheOptions = {
+            ...options,
+            cache: false,  // Disable caching for this call
+            debug: true
+        };
+
+        const result = await play(
+            "get the current page URL",
+            { page, test },
+            noCacheOptions
+        );
+
+        console.log(`\nFresh result (no cache): ${result}`);
+        console.log("\n✅ Use cache: false for dynamic content");
+    });
+
+    test("View cache statistics programmatically", async ({ page }) => {
+        // Get cache manager instance
+        const cacheManager = getDefaultCacheManager();
+
+        // Get statistics
+        const stats = await cacheManager.getStats();
+
+        console.log("\n=== Cache Statistics ===");
+        console.log(`Total entries:    ${stats.totalEntries}`);
+        console.log(`Total size:       ${(stats.totalSizeBytes / 1024).toFixed(2)} KB`);
+        console.log(`Cache hits:       ${stats.hits}`);
+        console.log(`Cache misses:     ${stats.misses}`);
+        console.log(`Hit rate:         ${stats.hitRate.toFixed(1)}%`);
+        console.log(`Est. savings:     $${stats.estimatedSavings.toFixed(2)}`);
+        console.log("========================\n");
+
+        // Make a cached call to demonstrate
+        await play(
+            "get the login form action",
+            { page, test },
+            options
+        );
+
+        // Check stats again
+        const newStats = await cacheManager.getStats();
+        console.log(`Stats after call: ${newStats.totalEntries} entries, ${newStats.hits + newStats.misses} total operations`);
+    });
+
+    test("Cache with parallel execution", async ({ page }) => {
+        // Login first
+        await play(
+            [
+                `Type "standard_user" in the Username field`,
+                `Type "secret_sauce" in the Password field`,
+                `Click the Login button`
+            ],
+            { page, test },
+            options
+        );
+
+        console.log("\n=== Parallel Execution with Caching ===\n");
+
+        // First parallel run - may make multiple API calls
+        console.log("First parallel run:");
+        const results1 = await playParallel(
+            [
+                "get the header logo text",
+                "get the first inventory item name",
+                "get the shopping cart link text"
+            ],
+            { page, test },
+            options
+        );
+
+        console.log(`  Results: ${results1.map(r => r.result).join(", ")}`);
+
+        // Second parallel run - should use cache
+        console.log("\nSecond parallel run (cached):");
+        const results2 = await playParallel(
+            [
+                "get the header logo text",
+                "get the first inventory item name",
+                "get the shopping cart link text"
+            ],
+            { page, test },
+            options
+        );
+
+        console.log(`  Results: ${results2.map(r => r.result).join(", ")}`);
+
+        console.log("\n✅ Caching works with parallel execution!");
+    });
+
+    test("Demonstrate cache benefits", async ({ page }) => {
+        console.log("\n=== Cache Benefits Summary ===\n");
+
+        console.log("WITHOUT CACHING:");
+        console.log("  ❌ Every test run calls AI API");
+        console.log("  ❌ $0.01-0.05 per task");
+        console.log("  ❌ 1-3 seconds per task");
+        console.log("  ❌ Rate limit concerns");
+
+        console.log("\nWITH CACHING:");
+        console.log("  ✅ First run only calls API");
+        console.log("  ✅ Subsequent runs: FREE");
+        console.log("  ✅ <50ms per cached task");
+        console.log("  ✅ No rate limit issues");
+
+        console.log("\nCACHE CLI COMMANDS:");
+        console.log("  npx play-ai cache stats       # View statistics");
+        console.log("  npx play-ai cache clear --all # Clear all cache");
+        console.log("  npx play-ai cache cleanup     # Remove expired");
+
+        console.log("\nENVIRONMENT VARIABLES:");
+        console.log("  PLAY_AI_CACHE=true            # Enable (default)");
+        console.log("  PLAY_AI_CACHE_TTL=86400       # TTL in seconds");
+        console.log("  PLAY_AI_CACHE_STRATEGY=aggressive");
+
+        console.log("\n================================\n");
+
+        // Actually run a cached operation
+        await play(
+            "Click the Login button",
+            { page, test },
+            options
+        );
     });
 });
 

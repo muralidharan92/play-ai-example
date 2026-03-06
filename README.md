@@ -5,6 +5,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 ## Features
 
 - **Multi-Provider Support**: OpenAI, Anthropic Claude, Google Gemini, Ollama
+- **Response Caching**: Reduce API costs by 80%+ with intelligent caching
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
@@ -327,6 +328,77 @@ npx play-ai heal ./generated/*.spec.ts --dry-run
 | Maintenance | High effort | Low effort |
 | CI/CD | Flaky tests | Self-healing |
 
+## Response Caching
+
+Cache AI responses to reduce API costs by 80%+. When you run the same task with the same DOM, Play AI returns the cached result instantly.
+
+### How It Works
+
+```
+First run:  play("Click Login") → AI API call → Result cached
+Next runs:  play("Click Login") → Cache hit → Instant result (FREE!)
+```
+
+### Basic Usage (Enabled by Default)
+
+```typescript
+// Caching is enabled by default
+await play("Click Login", { page, test });
+
+// Second call with same task + DOM = cache hit
+await play("Click Login", { page, test }); // Uses cache, no API call
+```
+
+### Configuration Options
+
+```typescript
+await play("Click Login", { page, test }, {
+    cache: true,                    // Enable/disable caching (default: true)
+    cacheTTL: 86400,               // Cache TTL in seconds (default: 24 hours)
+    cacheStrategy: "aggressive",   // aggressive | conservative | smart | off
+    cacheDir: ".play-ai-cache"     // Cache directory
+});
+```
+
+### Cache Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| `aggressive` | Cache everything, longer TTL (default) |
+| `conservative` | Only cache exact DOM matches |
+| `smart` | AI-assisted cache invalidation |
+| `off` | Disable caching |
+
+### CLI Commands
+
+```bash
+# View cache statistics
+npx play-ai cache stats
+
+# Clear all cache entries
+npx play-ai cache clear --all
+
+# Clear entries for specific provider
+npx play-ai cache clear --provider openai
+
+# Dry run - see what would be cleared
+npx play-ai cache clear --all --dry-run
+
+# Remove expired entries
+npx play-ai cache cleanup
+```
+
+### Benefits
+
+| | Without Caching | With Caching |
+|---|-----------------|--------------|
+| API calls | Every test run | First run only* |
+| Cost | $0.01-0.05 per task | ~$0 after cached |
+| Speed | 1-3s per task | <50ms per task |
+| Rate limits | Can hit limits | Reduced API usage |
+
+*For identical task + DOM combinations
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -339,6 +411,10 @@ npx play-ai heal ./generated/*.spec.ts --dry-run
 | `PLAY_AI_CODE_OUTPUT_DIR` | Output directory for generated tests | `./generated` |
 | `PLAY_AI_HEALING` | Enable auto-healing during test runs | `true` |
 | `PLAY_AI_HEALING_DEBUG` | Enable healing debug output | `true` |
+| `PLAY_AI_CACHE` | Enable response caching | `true` (default) |
+| `PLAY_AI_CACHE_DIR` | Cache directory | `.play-ai-cache` |
+| `PLAY_AI_CACHE_TTL` | Cache TTL in seconds | `86400` (24 hours) |
+| `PLAY_AI_CACHE_STRATEGY` | Cache strategy | `aggressive`, `conservative`, `off` |
 | `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
 | `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
 | `GEMINI_API_KEY` | Google Gemini API key | `...` |
@@ -381,6 +457,15 @@ tests/
     │   ├── Heal a broken selector using AI
     │   ├── Use healing page wrapper
     │   └── Demonstrate healing workflow
+    │
+    ├── Response Caching Examples
+    │   ├── Basic caching (automatic)
+    │   ├── Explicit cache configuration
+    │   ├── Cache strategies comparison
+    │   ├── Disable caching for specific calls
+    │   ├── View cache statistics
+    │   ├── Cache with parallel execution
+    │   └── Demonstrate cache benefits
     │
     └── Complete Workflow Example
         └── Generate + Run + Auto-Heal

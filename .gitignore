@@ -10,3 +10,6 @@ node_modules/
 # Generated tests (from code generation)
 /generated/
 
+# Play AI cache
+/.play-ai-cache/
+
