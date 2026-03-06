@@ -6,7 +6,14 @@ import {
     startCodeGeneration,
     exportGeneratedCode,
     isCodeGenerationActive,
-    getCollectedActionsCount
+    getCollectedActionsCount,
+    // Auto-healing imports
+    createHealingPage,
+    healSelector,
+    verifySelector,
+    healTestFile,
+    resetHealingStats,
+    getHealingStats
 } from "play-ai";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
@@ -635,5 +642,225 @@ test.describe("Play AI - Code Generation Examples", () => {
         });
 
         console.log(`\n✅ Generated: ${outputFile}`);
+    });
+});
+
+/**
+ * Auto-Healing Examples
+ * These tests demonstrate how to use auto-healing to automatically fix broken selectors
+ */
+test.describe("Play AI - Auto-Healing Examples", () => {
+    test.afterEach(async ({ page }) => {
+        await page.close();
+        resetHealingStats();
+    });
+
+    test("Verify selector works on page", async ({ page }) => {
+        await page.goto("https://www.saucedemo.com/");
+
+        // Use verifySelector to check if a selector exists
+        const usernameExists = await verifySelector(page, '[data-test="username"]');
+        const passwordExists = await verifySelector(page, '[data-test="password"]');
+        const loginBtnExists = await verifySelector(page, '[data-test="login-button"]');
+
+        expect(usernameExists).toBe(true);
+        expect(passwordExists).toBe(true);
+        expect(loginBtnExists).toBe(true);
+
+        console.log("\n✅ All selectors verified successfully");
+    });
+
+    test("Heal a broken selector using AI", async ({ page }) => {
+        // Skip if no API key configured
+        const hasApiKey = process.env.OPENAI_API_KEY ||
+            process.env.ANTHROPIC_API_KEY ||
+            process.env.GEMINI_API_KEY ||
+            process.env.OLLAMA_BASE_URL;
+
+        test.skip(!hasApiKey, "No AI provider API key configured");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        // Simulate a broken selector and heal it
+        const brokenSelector = "#non-existent-username-field";
+
+        // Verify the broken selector doesn't work
+        const isBroken = !(await verifySelector(page, brokenSelector));
+        expect(isBroken).toBe(true);
+        console.log(`\n❌ Broken selector: ${brokenSelector}`);
+
+        // Use healSelector to find the correct selector
+        const healResult = await healSelector(page, {
+            selector: brokenSelector,
+            action: "fill",
+            taskDescription: "Type username in the Username field"
+        }, {
+            debug: true,
+            provider: options.provider,
+            openaiApiKey: process.env.OPENAI_API_KEY,
+            anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+            geminiApiKey: process.env.GEMINI_API_KEY,
+            ollamaBaseUrl: process.env.OLLAMA_BASE_URL
+        });
+
+        if (healResult.success) {
+            console.log(`✅ Healed selector: ${healResult.healedSelector}`);
+
+            // Verify the healed selector works
+            const healedWorks = await verifySelector(page, healResult.healedSelector!);
+            expect(healedWorks).toBe(true);
+        } else {
+            console.log(`⚠️ Healing failed: ${healResult.error}`);
+        }
+    });
+
+    test("Use healing page wrapper for automatic healing", async ({ page }) => {
+        // Skip if healing not enabled
+        test.skip(
+            process.env.PLAY_AI_HEALING !== "true",
+            "Set PLAY_AI_HEALING=true to run this test"
+        );
+
+        await page.goto("https://www.saucedemo.com/");
+
+        // Create a healing-enabled page wrapper
+        // When PLAY_AI_HEALING=true, this wrapper will auto-heal failed selectors
+        const healingPage = createHealingPage(page);
+
+        // These actions will auto-heal if selectors fail
+        await healingPage.locator('[data-test="username"]').fill("standard_user");
+        await healingPage.locator('[data-test="password"]').fill("secret_sauce");
+        await healingPage.locator('[data-test="login-button"]').click();
+
+        // Check healing stats
+        const stats = getHealingStats();
+        console.log(`\nHealing stats:`);
+        console.log(`  Total attempts: ${stats.totalAttempts}`);
+        console.log(`  Successful heals: ${stats.successfulHeals}`);
+        console.log(`  Failed heals: ${stats.failedHeals}`);
+    });
+
+    test("Demonstrate healing workflow", async ({ page }) => {
+        await page.goto("https://www.saucedemo.com/");
+
+        console.log("\n=== Auto-Healing Workflow Demo ===\n");
+
+        // Step 1: Show working selectors
+        console.log("Step 1: Verify current selectors work");
+        const selectors = [
+            '[data-test="username"]',
+            '[data-test="password"]',
+            '[data-test="login-button"]'
+        ];
+
+        for (const selector of selectors) {
+            const works = await verifySelector(page, selector);
+            console.log(`  ${works ? "✅" : "❌"} ${selector}`);
+        }
+
+        // Step 2: Show what happens with broken selectors
+        console.log("\nStep 2: When selectors break (e.g., after UI update)");
+        console.log("  - Without healing: Test fails, manual fix needed");
+        console.log("  - With healing: AI finds new selector, test passes");
+
+        // Step 3: Show healing modes
+        console.log("\nStep 3: Two ways to use auto-healing:");
+        console.log("\n  Option A: Environment variable (automatic)");
+        console.log("    PLAY_AI_HEALING=true npx playwright test");
+        console.log("\n  Option B: CLI command (manual)");
+        console.log("    npx play-ai heal ./generated/login.spec.ts");
+
+        // Step 4: Show benefits
+        console.log("\nStep 4: Benefits");
+        console.log("  ✓ Reduced test maintenance");
+        console.log("  ✓ Self-healing CI/CD pipelines");
+        console.log("  ✓ Less time debugging broken tests");
+        console.log("  ✓ Automatic test file updates");
+
+        console.log("\n=================================\n");
+    });
+});
+
+/**
+ * Integration Example: Code Generation + Auto-Healing
+ * This demonstrates the complete workflow for low-maintenance testing
+ */
+test.describe("Play AI - Complete Workflow Example", () => {
+    const outputDir = "./generated";
+
+    test.beforeAll(() => {
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+    });
+
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Complete workflow: Generate + Run + Auto-Heal", async ({ page }) => {
+        console.log("\n=== Complete Low-Maintenance Testing Workflow ===\n");
+
+        // Phase 1: Generate tests with AI
+        console.log("PHASE 1: Generate Tests (First Run - Uses AI)");
+        console.log("─".repeat(50));
+
+        startCodeGeneration("https://www.saucedemo.com/", "Complete workflow test");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        const codeGenOptions = { ...options, generateCode: true };
+
+        await play(
+            [
+                `Type "standard_user" in the Username field`,
+                `Type "secret_sauce" in the Password field`,
+                `Click the Login button`
+            ],
+            { page, test },
+            codeGenOptions
+        );
+
+        const headerText = await play(
+            "get the header logo label text",
+            { page, test },
+            codeGenOptions
+        );
+
+        expect(headerText).toBe("Swag Labs");
+
+        const outputFile = path.join(outputDir, "workflow-example.spec.ts");
+        exportGeneratedCode(outputFile, {
+            testName: "Generated login test",
+            testDescribe: "Workflow Example"
+        });
+
+        console.log(`  ✅ Generated: ${outputFile}`);
+        console.log(`  📊 Actions collected: ${getCollectedActionsCount()}`);
+
+        // Phase 2: Explain subsequent runs
+        console.log("\nPHASE 2: Run Generated Tests (No AI Needed)");
+        console.log("─".repeat(50));
+        console.log("  Command: npx playwright test generated/workflow-example.spec.ts");
+        console.log("  ✅ Runs without AI API calls");
+        console.log("  ✅ Fast execution (~50ms per action)");
+        console.log("  ✅ No API costs");
+
+        // Phase 3: Explain auto-healing
+        console.log("\nPHASE 3: When Selectors Break (Auto-Healing)");
+        console.log("─".repeat(50));
+        console.log("  If UI changes break selectors:");
+        console.log("  ");
+        console.log("  Option A - Automatic healing during test:");
+        console.log("    PLAY_AI_HEALING=true npx playwright test generated/");
+        console.log("  ");
+        console.log("  Option B - Manual healing via CLI:");
+        console.log("    npx play-ai heal ./generated/workflow-example.spec.ts");
+        console.log("  ");
+        console.log("  ✅ AI finds correct selectors");
+        console.log("  ✅ Test files auto-updated");
+        console.log("  ✅ Minimal maintenance required");
+
+        console.log("\n=== Workflow Complete ===\n");
     });
 });

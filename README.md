@@ -371,10 +371,19 @@ tests/
     │   ├── Parallel execution with concurrency limit
     │   └── Parallel execution with error handling
     │
-    └── Code Generation Examples
-        ├── Generate login test from natural language
-        ├── Generate inventory browsing test
-        └── Generate add to cart test
+    ├── Code Generation Examples
+    │   ├── Generate login test from natural language
+    │   ├── Generate inventory browsing test
+    │   └── Generate add to cart test
+    │
+    ├── Auto-Healing Examples
+    │   ├── Verify selector works on page
+    │   ├── Heal a broken selector using AI
+    │   ├── Use healing page wrapper
+    │   └── Demonstrate healing workflow
+    │
+    └── Complete Workflow Example
+        └── Generate + Run + Auto-Heal
 ```
 
 ## Supported Actions
