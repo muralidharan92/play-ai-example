@@ -12,6 +12,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 - **iFrame Support**: Payment forms, nested iframes, multiple iframes
 - **Shadow DOM**: Web components, custom elements, accessible interactions
 - **Smart Retry Logic**: Exponential backoff with jitter for reliable tests
+- **Visual Testing**: Screenshot comparison with AI-powered diff analysis
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
@@ -749,6 +750,79 @@ await play("Click the Delete button", { page, test }, {
 });
 ```
 
+## Visual Testing
+
+AI-powered visual regression testing with screenshot comparison and intelligent diff analysis.
+
+### Basic Visual Test
+
+```typescript
+import { visualTest, compareScreenshots } from "play-ai";
+
+// Test current page against baseline
+const result = await visualTest("Login page", { page, test }, {
+    baseline: "./baselines/login.png",
+    threshold: 0.01,  // 1% tolerance
+    mask: ["[data-testid='timestamp']"]  // Ignore dynamic elements
+});
+
+expect(result.passed).toBe(true);
+```
+
+### Element Screenshot Comparison
+
+```typescript
+// Compare specific element
+const result = await visualTest("Header component", { page, test }, {
+    selector: "header",
+    baseline: "./baselines/header.png"
+});
+```
+
+### AI-Powered Analysis
+
+```typescript
+const result = await compareScreenshots({
+    actual: "./screenshots/actual.png",
+    expected: "./baselines/expected.png",
+    aiAnalysis: true
+});
+
+console.log(result.aiAnalysis?.description);
+// "Significant color change detected in button area"
+
+console.log(result.aiAnalysis?.severity);
+// "moderate"
+```
+
+### CLI Commands
+
+```bash
+# Compare two screenshots
+npx play-ai visual compare ./actual.png ./expected.png
+
+# Compare with AI analysis
+npx play-ai visual compare ./a.png ./b.png --ai --diff ./diff.png
+
+# Update baselines
+npx play-ai visual update ./baselines/ ./screenshots/
+
+# Cleanup old screenshots
+npx play-ai visual cleanup ./screenshots/ --days 7
+```
+
+### Visual Test Result
+
+| Property | Description |
+|----------|-------------|
+| `passed` | Whether images match within threshold |
+| `pixelDiff.diffPercentage` | Percentage of pixels that differ |
+| `pixelDiff.diffPixels` | Number of different pixels |
+| `pixelDiff.diffRegions` | Areas where differences were detected |
+| `aiAnalysis.description` | Human-readable summary of changes |
+| `aiAnalysis.severity` | none / minor / moderate / major / critical |
+| `aiAnalysis.isRegression` | Whether this is likely a bug |
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -770,6 +844,11 @@ await play("Click the Delete button", { page, test }, {
 | `PLAY_AI_RETRY_INITIAL_DELAY` | Initial retry delay (ms) | `1000` |
 | `PLAY_AI_RETRY_MAX_DELAY` | Maximum retry delay (ms) | `10000` |
 | `PLAY_AI_RETRY_BACKOFF_MULTIPLIER` | Backoff multiplier | `2` |
+| `PLAY_AI_VISUAL_THRESHOLD` | Visual diff threshold | `0.01` (1%) |
+| `PLAY_AI_VISUAL_BASELINE_DIR` | Baseline screenshots directory | `./baselines` |
+| `PLAY_AI_VISUAL_SCREENSHOT_DIR` | Screenshots directory | `./screenshots` |
+| `PLAY_AI_VISUAL_UPDATE_BASELINE` | Auto-update baselines | `false` |
+| `PLAY_AI_VISUAL_AI_ANALYSIS` | Enable AI analysis | `false` |
 | `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
 | `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
 | `GEMINI_API_KEY` | Google Gemini API key | `...` |

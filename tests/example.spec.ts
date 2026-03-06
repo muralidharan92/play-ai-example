@@ -3201,3 +3201,124 @@ test.describe("Play AI - Smart Retry Logic Examples", () => {
         console.log("\n✅ Exponential backoff with jitter active");
     });
 });
+
+/**
+ * Visual Testing Examples
+ * Demonstrates screenshot comparison and visual regression testing
+ */
+test.describe("Play AI - Visual Testing Examples", () => {
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Basic visual test concept", async ({ page }) => {
+        console.log("\n=== Visual Testing ===\n");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        console.log("Visual Testing Workflow:");
+        console.log("  1. Take screenshot of current page/element");
+        console.log("  2. Compare with baseline screenshot");
+        console.log("  3. Calculate pixel differences");
+        console.log("  4. Generate diff image highlighting changes");
+        console.log("  5. Optionally use AI to analyze differences");
+
+        // Take a screenshot for demonstration
+        const screenshotPath = "./screenshots/login-page.png";
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        console.log(`\n📸 Screenshot saved: ${screenshotPath}`);
+
+        console.log("\n✅ Screenshot captured for visual testing");
+    });
+
+    test("Visual test configuration options", async ({ page }) => {
+        console.log("\n=== Visual Test Options ===\n");
+
+        console.log("Available Options:");
+        console.log("  baseline: './baselines/login.png'  // Baseline image path");
+        console.log("  threshold: 0.01                    // 1% tolerance");
+        console.log("  mask: ['[data-dynamic]']           // Ignore dynamic elements");
+        console.log("  selector: 'header'                 // Element screenshot");
+        console.log("  aiAnalysis: true                   // Enable AI analysis");
+        console.log("  updateBaseline: false              // Auto-update baseline");
+
+        console.log("\nExample Usage:");
+        console.log("  const result = await visualTest('Login page', { page, test }, {");
+        console.log("      baseline: './baselines/login.png',");
+        console.log("      threshold: 0.01,");
+        console.log("      mask: ['[data-testid=\"timestamp\"]'],");
+        console.log("      aiAnalysis: true");
+        console.log("  });");
+
+        console.log("\n✅ Visual test options documented");
+    });
+
+    test("Compare screenshots API", async ({ page }) => {
+        console.log("\n=== Screenshot Comparison API ===\n");
+
+        console.log("compareScreenshots() Options:");
+        console.log("  actual: './screenshots/current.png'   // Current screenshot");
+        console.log("  expected: './baselines/expected.png'  // Baseline");
+        console.log("  diffOutput: './diffs/diff.png'        // Diff image output");
+        console.log("  threshold: 0.01                       // Pixel tolerance");
+        console.log("  aiAnalysis: true                      // AI analysis");
+
+        console.log("\nResult Structure:");
+        console.log("  {");
+        console.log("    match: boolean,           // Did images match?");
+        console.log("    pixelDiff: {");
+        console.log("      diffPercentage: 0.005,  // 0.5% different");
+        console.log("      diffPixels: 1200,       // Number of pixels");
+        console.log("      diffRegions: [...]      // Areas with differences");
+        console.log("    },");
+        console.log("    aiAnalysis: {");
+        console.log("      description: '...',     // Human-readable summary");
+        console.log("      severity: 'minor',      // none/minor/moderate/major/critical");
+        console.log("      isRegression: false,    // Likely a bug?");
+        console.log("      suggestion: '...'       // Recommended action");
+        console.log("    }");
+        console.log("  }");
+
+        console.log("\n✅ API structure documented");
+    });
+
+    test("CLI commands for visual testing", async ({ page }) => {
+        console.log("\n=== Visual Testing CLI Commands ===\n");
+
+        console.log("Compare Screenshots:");
+        console.log("  npx play-ai visual compare ./actual.png ./expected.png");
+        console.log("  npx play-ai visual compare ./a.png ./b.png --ai --diff ./diff.png");
+        console.log("  npx play-ai visual compare ./a.png ./b.png --threshold 0.05");
+
+        console.log("\nUpdate Baselines:");
+        console.log("  npx play-ai visual update ./baselines/ ./screenshots/");
+        console.log("  npx play-ai visual update ./baselines/ --dry-run");
+
+        console.log("\nGenerate Report:");
+        console.log("  npx play-ai visual report ./visual-report/");
+
+        console.log("\nCleanup Screenshots:");
+        console.log("  npx play-ai visual cleanup ./screenshots/ --days 7");
+        console.log("  npx play-ai visual cleanup ./screenshots/ --dry-run");
+
+        console.log("\n✅ CLI commands documented");
+    });
+
+    test("Environment variables for visual testing", async ({ page }) => {
+        console.log("\n=== Visual Testing Environment Variables ===\n");
+
+        console.log("Configuration:");
+        console.log("  PLAY_AI_VISUAL_THRESHOLD=0.01       # Default threshold (1%)");
+        console.log("  PLAY_AI_VISUAL_BASELINE_DIR=./baselines");
+        console.log("  PLAY_AI_VISUAL_SCREENSHOT_DIR=./screenshots");
+        console.log("  PLAY_AI_VISUAL_UPDATE_BASELINE=false");
+        console.log("  PLAY_AI_VISUAL_AI_ANALYSIS=false");
+
+        console.log("\nExample .env file:");
+        console.log("  PLAY_AI_VISUAL_THRESHOLD=0.01");
+        console.log("  PLAY_AI_VISUAL_BASELINE_DIR=./test-baselines");
+        console.log("  PLAY_AI_VISUAL_AI_ANALYSIS=true");
+
+        console.log("\n✅ Environment variables documented");
+    });
+});
