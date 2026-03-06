@@ -8,6 +8,9 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 - **Response Caching**: Reduce API costs by 80%+ with intelligent caching
 - **Multi-Tab / Multi-Page**: Handle complex scenarios with multiple browser tabs
 - **File Upload / Download**: Handle file operations with natural language
+- **Drag and Drop**: Sortable lists, sliders, Kanban boards, resizable panels
+- **iFrame Support**: Payment forms, nested iframes, multiple iframes
+- **Shadow DOM**: Web components, custom elements, accessible interactions
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
@@ -514,6 +517,169 @@ await download.saveAs('./downloads/file.pdf');
 | Report export | Download generated reports |
 | Data export | Export CSV, Excel files |
 
+## Drag and Drop
+
+Test drag and drop interactions, sliders, and sortable lists using natural language.
+
+### Basic Drag and Drop
+
+```typescript
+// Drag one element to another
+await play("Drag 'Item 1' and drop it on 'Cart'", { page, test });
+
+// Drag using CSS selectors
+await play("Drag the task card to the Done column", { page, test });
+```
+
+### Slider Operations
+
+```typescript
+// Set slider to percentage
+await play("Drag the slider to 75%", { page, test });
+
+// Set volume/brightness
+await play("Set the volume slider to 50%", { page, test });
+```
+
+### Position and Offset Dragging
+
+```typescript
+// Drag to specific coordinates
+await play("Drag the element to position (300, 200)", { page, test });
+
+// Drag by relative offset
+await play("Move the panel 100 pixels to the right", { page, test });
+```
+
+### Programmatic Drag and Drop
+
+```typescript
+// Element to element
+await page.locator('#source').dragTo(page.locator('#target'));
+
+// Selector-based
+await page.dragAndDrop('#source', '#target');
+
+// Mouse API for custom positioning
+const box = await page.locator('#element').boundingBox();
+await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+await page.mouse.down();
+await page.mouse.move(targetX, targetY, { steps: 10 });
+await page.mouse.up();
+```
+
+### Drag and Drop Use Cases
+
+| Use Case | Example |
+|----------|---------|
+| Kanban boards | Move cards between columns |
+| Sortable lists | Reorder todo items |
+| File managers | Drag files to folders |
+| Sliders/ranges | Volume, price range, brightness |
+| Resizable panels | Drag dividers to resize |
+| Shopping carts | Drag products to cart |
+
+## iFrame Support
+
+Test content inside iframes, including payment forms, embedded widgets, and third-party integrations.
+
+### Basic iFrame Interactions
+
+```typescript
+// Access iframe and interact with elements inside
+const frame = page.frameLocator('#payment-frame');
+await frame.locator('#card-number').fill('4242424242424242');
+await frame.locator('#expiry').fill('12/25');
+await frame.locator('#submit').click();
+
+// Get text from iframe
+const message = await frame.locator('.result').textContent();
+```
+
+### Multiple iFrames
+
+```typescript
+// Interact with different iframes on the same page
+const frame1 = page.frameLocator('#frame1');
+const frame2 = page.frameLocator('#frame2');
+
+await frame1.locator('button').click();
+await frame2.locator('input').fill('value');
+```
+
+### Nested iFrames
+
+```typescript
+// Access nested iframes (iframe inside another iframe)
+const outer = page.frameLocator('#outer-frame');
+const inner = outer.frameLocator('#inner-frame');
+
+await inner.locator('button').click();
+```
+
+### iFrame Use Cases
+
+| Use Case | Example |
+|----------|---------|
+| Payment forms | Stripe, PayPal, Braintree embedded forms |
+| CAPTCHA widgets | reCAPTCHA, hCaptcha |
+| Social embeds | YouTube, Twitter, Facebook |
+| Third-party widgets | Chat widgets, calendars, maps |
+| Legacy integrations | Embedded legacy applications |
+
+## Shadow DOM Support
+
+Test web components and custom elements that use Shadow DOM. Playwright automatically pierces shadow DOM boundaries.
+
+### Basic Shadow DOM Interactions
+
+```typescript
+// Playwright automatically pierces open shadow DOM
+await page.locator('custom-element button').click();
+await page.locator('custom-input input').fill('value');
+
+// Get text from inside shadow DOM
+const text = await page.locator('custom-element .message').textContent();
+```
+
+### Using getByRole (Recommended)
+
+```typescript
+// getByRole works across shadow boundaries
+await page.getByRole('button', { name: 'Submit' }).click();
+await page.getByLabel('Email').fill('test@example.com');
+await page.getByPlaceholder('Search...').fill('query');
+```
+
+### Custom Form Components
+
+```typescript
+// Interact with custom form elements
+await page.locator('custom-input').locator('input').fill('John Doe');
+await page.locator('custom-checkbox').locator('input[type="checkbox"]').check();
+await page.locator('custom-select').locator('select').selectOption('option1');
+```
+
+### Closed Shadow Roots
+
+```typescript
+// For closed shadow roots, use evaluate
+await page.evaluate(() => {
+    const host = document.querySelector('custom-element');
+    const button = host.shadowRoot.querySelector('button');
+    button.click();
+});
+```
+
+### Shadow DOM Use Cases
+
+| Use Case | Example |
+|----------|---------|
+| Web Components | Custom elements with encapsulation |
+| UI Libraries | Shoelace, Lit, Stencil components |
+| Design Systems | Enterprise component libraries |
+| Third-party widgets | Encapsulated third-party components |
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -597,6 +763,27 @@ tests/
     │   ├── File upload with Playwright API
     │   ├── Demonstrate download handling patterns
     │   └── File upload/download use cases summary
+    │
+    ├── Drag and Drop Examples
+    │   ├── Basic drag and drop between elements
+    │   ├── Drag and drop using page.dragAndDrop
+    │   ├── Slider manipulation by percentage
+    │   ├── Drag element to specific position
+    │   ├── Drag by offset (relative movement)
+    │   ├── Sortable list drag and drop
+    │   └── Drag and drop use cases summary
+    │
+    ├── iFrame Examples
+    │   ├── Basic iframe interactions
+    │   ├── Multiple iframes on same page
+    │   ├── Nested iframes
+    │   └── iFrame use cases summary
+    │
+    ├── Shadow DOM Examples
+    │   ├── Basic shadow DOM interactions
+    │   ├── Shadow DOM form components
+    │   ├── Using getByRole with shadow DOM
+    │   └── Shadow DOM use cases summary
     │
     └── Complete Workflow Example
         └── Generate + Run + Auto-Heal

@@ -1521,6 +1521,1448 @@ test.describe("Play AI - File Upload / Download Examples", () => {
 });
 
 /**
+ * Drag and Drop Examples
+ * Demonstrates drag and drop, slider operations, and sortable list interactions
+ */
+test.describe("Play AI - Drag and Drop Examples", () => {
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Basic drag and drop between elements", async ({ page }) => {
+        console.log("\n=== Basic Drag and Drop ===\n");
+
+        // Create a page with drag and drop elements
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        .container { display: flex; gap: 20px; padding: 20px; }
+                        .box {
+                            width: 200px;
+                            height: 200px;
+                            border: 2px dashed #ccc;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            flex-direction: column;
+                        }
+                        .draggable {
+                            width: 80px;
+                            height: 80px;
+                            background: #4CAF50;
+                            color: white;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            cursor: grab;
+                            border-radius: 8px;
+                        }
+                        .drop-zone {
+                            background: #f0f0f0;
+                        }
+                        .drop-zone.drag-over {
+                            background: #e3f2fd;
+                            border-color: #2196F3;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Drag and Drop Demo</h1>
+                    <div class="container">
+                        <div class="box" id="source">
+                            <p>Source</p>
+                            <div id="item" class="draggable" draggable="true">Drag me</div>
+                        </div>
+                        <div class="box drop-zone" id="target">
+                            <p>Drop here</p>
+                        </div>
+                    </div>
+                    <p id="status">Status: Waiting</p>
+                    <script>
+                        const item = document.getElementById('item');
+                        const target = document.getElementById('target');
+                        const status = document.getElementById('status');
+
+                        item.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text/plain', e.target.id);
+                            status.textContent = 'Status: Dragging...';
+                        });
+
+                        target.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            target.classList.add('drag-over');
+                        });
+
+                        target.addEventListener('dragleave', () => {
+                            target.classList.remove('drag-over');
+                        });
+
+                        target.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            const id = e.dataTransfer.getData('text/plain');
+                            const draggedItem = document.getElementById(id);
+                            target.appendChild(draggedItem);
+                            target.classList.remove('drag-over');
+                            status.textContent = 'Status: Dropped!';
+                        });
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Initial state:");
+        const initialParent = await page.locator('#item').evaluate(el => el.parentElement?.id);
+        console.log(`  Item is in: ${initialParent}`);
+
+        // Using Playwright's dragTo API
+        console.log("\nPerforming drag and drop...");
+        await page.locator('#item').dragTo(page.locator('#target'));
+
+        // Verify the drop
+        const finalParent = await page.locator('#item').evaluate(el => el.parentElement?.id);
+        console.log(`  Item is now in: ${finalParent}`);
+
+        const status = await page.locator('#status').textContent();
+        console.log(`  Status: ${status}`);
+
+        expect(finalParent).toBe('target');
+        console.log("\n✅ Drag and drop completed successfully!");
+    });
+
+    test("Drag and drop using page.dragAndDrop", async ({ page }) => {
+        console.log("\n=== Drag and Drop with CSS Selectors ===\n");
+
+        // Create a Kanban-style board
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        .board { display: flex; gap: 20px; padding: 20px; }
+                        .column {
+                            width: 200px;
+                            min-height: 300px;
+                            background: #f5f5f5;
+                            border-radius: 8px;
+                            padding: 10px;
+                        }
+                        .column h3 { margin: 0 0 10px 0; text-align: center; }
+                        .card {
+                            background: white;
+                            padding: 10px;
+                            margin-bottom: 10px;
+                            border-radius: 4px;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                            cursor: grab;
+                        }
+                        .column.drag-over { background: #e3f2fd; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Kanban Board</h1>
+                    <div class="board">
+                        <div class="column" id="todo">
+                            <h3>To Do</h3>
+                            <div class="card" id="task1" draggable="true">Task 1: Design</div>
+                            <div class="card" id="task2" draggable="true">Task 2: Develop</div>
+                        </div>
+                        <div class="column" id="inprogress">
+                            <h3>In Progress</h3>
+                        </div>
+                        <div class="column" id="done">
+                            <h3>Done</h3>
+                        </div>
+                    </div>
+                    <script>
+                        document.querySelectorAll('.card').forEach(card => {
+                            card.addEventListener('dragstart', e => {
+                                e.dataTransfer.setData('text/plain', e.target.id);
+                            });
+                        });
+
+                        document.querySelectorAll('.column').forEach(column => {
+                            column.addEventListener('dragover', e => {
+                                e.preventDefault();
+                                column.classList.add('drag-over');
+                            });
+                            column.addEventListener('dragleave', () => {
+                                column.classList.remove('drag-over');
+                            });
+                            column.addEventListener('drop', e => {
+                                e.preventDefault();
+                                const id = e.dataTransfer.getData('text/plain');
+                                column.appendChild(document.getElementById(id));
+                                column.classList.remove('drag-over');
+                            });
+                        });
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Initial board state:");
+        const todoCards = await page.locator('#todo .card').count();
+        const inProgressCards = await page.locator('#inprogress .card').count();
+        console.log(`  To Do: ${todoCards} cards`);
+        console.log(`  In Progress: ${inProgressCards} cards`);
+
+        // Use page.dragAndDrop with selectors
+        console.log("\nMoving Task 1 to In Progress...");
+        await page.dragAndDrop('#task1', '#inprogress');
+
+        console.log("Moving Task 2 to Done...");
+        await page.dragAndDrop('#task2', '#done');
+
+        // Verify the moves
+        const finalTodo = await page.locator('#todo .card').count();
+        const finalInProgress = await page.locator('#inprogress .card').count();
+        const finalDone = await page.locator('#done .card').count();
+
+        console.log("\nFinal board state:");
+        console.log(`  To Do: ${finalTodo} cards`);
+        console.log(`  In Progress: ${finalInProgress} cards`);
+        console.log(`  Done: ${finalDone} cards`);
+
+        expect(finalTodo).toBe(0);
+        expect(finalInProgress).toBe(1);
+        expect(finalDone).toBe(1);
+
+        console.log("\n✅ Kanban board drag and drop completed!");
+    });
+
+    test("Slider manipulation by percentage", async ({ page }) => {
+        console.log("\n=== Slider Manipulation ===\n");
+
+        // Create a page with sliders
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        .slider-container {
+                            padding: 20px;
+                            max-width: 400px;
+                        }
+                        .slider-group {
+                            margin-bottom: 20px;
+                        }
+                        input[type="range"] {
+                            width: 100%;
+                            height: 20px;
+                        }
+                        .value-display {
+                            font-weight: bold;
+                            color: #2196F3;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Slider Controls</h1>
+                    <div class="slider-container">
+                        <div class="slider-group">
+                            <label>Volume: <span id="volumeValue" class="value-display">50</span>%</label>
+                            <input type="range" id="volume" min="0" max="100" value="50">
+                        </div>
+                        <div class="slider-group">
+                            <label>Brightness: <span id="brightnessValue" class="value-display">75</span>%</label>
+                            <input type="range" id="brightness" min="0" max="100" value="75">
+                        </div>
+                        <div class="slider-group">
+                            <label>Price Range: $<span id="priceValue" class="value-display">500</span></label>
+                            <input type="range" id="price" min="0" max="1000" value="500">
+                        </div>
+                    </div>
+                    <script>
+                        document.querySelectorAll('input[type="range"]').forEach(slider => {
+                            slider.addEventListener('input', (e) => {
+                                const valueSpan = document.getElementById(e.target.id + 'Value');
+                                valueSpan.textContent = e.target.value;
+                            });
+                        });
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Initial slider values:");
+        console.log(`  Volume: ${await page.locator('#volume').inputValue()}`);
+        console.log(`  Brightness: ${await page.locator('#brightness').inputValue()}`);
+        console.log(`  Price: ${await page.locator('#price').inputValue()}`);
+
+        // Set slider values using the fill method (for range inputs)
+        console.log("\nSetting Volume to 80%...");
+        await page.locator('#volume').fill('80');
+
+        console.log("Setting Brightness to 25%...");
+        await page.locator('#brightness').fill('25');
+
+        console.log("Setting Price to $750...");
+        await page.locator('#price').fill('750');
+
+        // Verify values
+        console.log("\nFinal slider values:");
+        const finalVolume = await page.locator('#volume').inputValue();
+        const finalBrightness = await page.locator('#brightness').inputValue();
+        const finalPrice = await page.locator('#price').inputValue();
+
+        console.log(`  Volume: ${finalVolume}`);
+        console.log(`  Brightness: ${finalBrightness}`);
+        console.log(`  Price: ${finalPrice}`);
+
+        expect(finalVolume).toBe('80');
+        expect(finalBrightness).toBe('25');
+        expect(finalPrice).toBe('750');
+
+        console.log("\n✅ Slider manipulation completed!");
+    });
+
+    test("Drag element to specific position", async ({ page }) => {
+        console.log("\n=== Position-Based Dragging ===\n");
+
+        // Create a canvas-like drag area
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        .canvas {
+                            width: 500px;
+                            height: 400px;
+                            background: #f0f0f0;
+                            position: relative;
+                            border: 2px solid #ccc;
+                            margin: 20px;
+                        }
+                        .draggable-box {
+                            width: 60px;
+                            height: 60px;
+                            background: #2196F3;
+                            color: white;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            position: absolute;
+                            cursor: move;
+                            border-radius: 8px;
+                            user-select: none;
+                        }
+                        #position { margin: 20px; font-family: monospace; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Position-Based Drag</h1>
+                    <div class="canvas" id="canvas">
+                        <div class="draggable-box" id="box" style="left: 20px; top: 20px;">
+                            Drag
+                        </div>
+                    </div>
+                    <p id="position">Position: (20, 20)</p>
+                    <script>
+                        const box = document.getElementById('box');
+                        const canvas = document.getElementById('canvas');
+                        const posDisplay = document.getElementById('position');
+                        let isDragging = false;
+                        let startX, startY, startLeft, startTop;
+
+                        box.addEventListener('mousedown', (e) => {
+                            isDragging = true;
+                            startX = e.clientX;
+                            startY = e.clientY;
+                            startLeft = parseInt(box.style.left);
+                            startTop = parseInt(box.style.top);
+                        });
+
+                        document.addEventListener('mousemove', (e) => {
+                            if (!isDragging) return;
+                            const dx = e.clientX - startX;
+                            const dy = e.clientY - startY;
+                            const newLeft = Math.max(0, Math.min(440, startLeft + dx));
+                            const newTop = Math.max(0, Math.min(340, startTop + dy));
+                            box.style.left = newLeft + 'px';
+                            box.style.top = newTop + 'px';
+                            posDisplay.textContent = 'Position: (' + newLeft + ', ' + newTop + ')';
+                        });
+
+                        document.addEventListener('mouseup', () => {
+                            isDragging = false;
+                        });
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Initial position:");
+        const initialLeft = await page.locator('#box').evaluate(el => parseInt(el.style.left));
+        const initialTop = await page.locator('#box').evaluate(el => parseInt(el.style.top));
+        console.log(`  Box at: (${initialLeft}, ${initialTop})`);
+
+        // Get the bounding box for the element
+        const box = await page.locator('#box').boundingBox();
+        const canvas = await page.locator('#canvas').boundingBox();
+
+        if (box && canvas) {
+            // Calculate center of the box
+            const startX = box.x + box.width / 2;
+            const startY = box.y + box.height / 2;
+
+            // Target position (center of canvas)
+            const targetX = canvas.x + canvas.width / 2;
+            const targetY = canvas.y + canvas.height / 2;
+
+            console.log(`\nDragging from (${Math.round(startX)}, ${Math.round(startY)}) to (${Math.round(targetX)}, ${Math.round(targetY)})...`);
+
+            // Perform the drag using mouse API
+            await page.mouse.move(startX, startY);
+            await page.mouse.down();
+            await page.mouse.move(targetX, targetY, { steps: 10 });
+            await page.mouse.up();
+
+            // Check final position
+            const finalLeft = await page.locator('#box').evaluate(el => parseInt(el.style.left));
+            const finalTop = await page.locator('#box').evaluate(el => parseInt(el.style.top));
+            console.log(`  Box now at: (${finalLeft}, ${finalTop})`);
+
+            // Position should have changed significantly
+            expect(Math.abs(finalLeft - initialLeft)).toBeGreaterThan(50);
+        }
+
+        console.log("\n✅ Position-based drag completed!");
+    });
+
+    test("Drag by offset (relative movement)", async ({ page }) => {
+        console.log("\n=== Offset-Based Dragging ===\n");
+
+        // Create a resizable panel
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        .panel-container {
+                            display: flex;
+                            width: 600px;
+                            height: 300px;
+                            margin: 20px;
+                            border: 1px solid #ccc;
+                        }
+                        .panel {
+                            height: 100%;
+                            overflow: auto;
+                            padding: 10px;
+                        }
+                        #leftPanel {
+                            width: 200px;
+                            background: #e3f2fd;
+                        }
+                        #rightPanel {
+                            flex: 1;
+                            background: #fff3e0;
+                        }
+                        .divider {
+                            width: 10px;
+                            background: #90a4ae;
+                            cursor: col-resize;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+                        .divider:hover { background: #607d8b; }
+                        #widthDisplay { margin: 20px; font-family: monospace; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Resizable Panels</h1>
+                    <div class="panel-container">
+                        <div class="panel" id="leftPanel">
+                            <h3>Left Panel</h3>
+                            <p>Drag the divider to resize</p>
+                        </div>
+                        <div class="divider" id="divider">⋮</div>
+                        <div class="panel" id="rightPanel">
+                            <h3>Right Panel</h3>
+                            <p>Content here</p>
+                        </div>
+                    </div>
+                    <p id="widthDisplay">Left panel width: 200px</p>
+                    <script>
+                        const divider = document.getElementById('divider');
+                        const leftPanel = document.getElementById('leftPanel');
+                        const display = document.getElementById('widthDisplay');
+                        let isResizing = false;
+                        let startX, startWidth;
+
+                        divider.addEventListener('mousedown', (e) => {
+                            isResizing = true;
+                            startX = e.clientX;
+                            startWidth = leftPanel.offsetWidth;
+                        });
+
+                        document.addEventListener('mousemove', (e) => {
+                            if (!isResizing) return;
+                            const dx = e.clientX - startX;
+                            const newWidth = Math.max(100, Math.min(400, startWidth + dx));
+                            leftPanel.style.width = newWidth + 'px';
+                            display.textContent = 'Left panel width: ' + newWidth + 'px';
+                        });
+
+                        document.addEventListener('mouseup', () => {
+                            isResizing = false;
+                        });
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Initial state:");
+        const initialWidth = await page.locator('#leftPanel').evaluate(el => el.offsetWidth);
+        console.log(`  Left panel width: ${initialWidth}px`);
+
+        // Get divider position
+        const divider = await page.locator('#divider').boundingBox();
+
+        if (divider) {
+            const startX = divider.x + divider.width / 2;
+            const startY = divider.y + divider.height / 2;
+
+            console.log("\nDragging divider 100px to the right...");
+
+            // Drag by offset using mouse API
+            await page.mouse.move(startX, startY);
+            await page.mouse.down();
+            await page.mouse.move(startX + 100, startY, { steps: 10 });
+            await page.mouse.up();
+
+            const newWidth = await page.locator('#leftPanel').evaluate(el => el.offsetWidth);
+            console.log(`  Left panel width: ${newWidth}px`);
+            console.log(`  Width increased by: ${newWidth - initialWidth}px`);
+
+            expect(newWidth).toBeGreaterThan(initialWidth);
+
+            console.log("\nDragging divider 50px to the left...");
+
+            // Get new divider position
+            const newDivider = await page.locator('#divider').boundingBox();
+            if (newDivider) {
+                const newStartX = newDivider.x + newDivider.width / 2;
+                await page.mouse.move(newStartX, startY);
+                await page.mouse.down();
+                await page.mouse.move(newStartX - 50, startY, { steps: 10 });
+                await page.mouse.up();
+
+                const finalWidth = await page.locator('#leftPanel').evaluate(el => el.offsetWidth);
+                console.log(`  Left panel width: ${finalWidth}px`);
+            }
+        }
+
+        console.log("\n✅ Offset-based drag completed!");
+    });
+
+    test("Sortable list drag and drop", async ({ page }) => {
+        console.log("\n=== Sortable List ===\n");
+
+        // Create a sortable list
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        .sortable-list {
+                            list-style: none;
+                            padding: 0;
+                            max-width: 300px;
+                            margin: 20px;
+                        }
+                        .sortable-item {
+                            padding: 15px;
+                            margin-bottom: 5px;
+                            background: #fff;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            cursor: grab;
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                        }
+                        .sortable-item:hover { background: #f5f5f5; }
+                        .sortable-item.dragging {
+                            opacity: 0.5;
+                            background: #e3f2fd;
+                        }
+                        .drag-handle { color: #999; }
+                        #orderDisplay {
+                            margin: 20px;
+                            padding: 10px;
+                            background: #f5f5f5;
+                            font-family: monospace;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Sortable List</h1>
+                    <ul class="sortable-list" id="list">
+                        <li class="sortable-item" data-id="1" draggable="true">
+                            <span class="drag-handle">☰</span> Item 1 - First
+                        </li>
+                        <li class="sortable-item" data-id="2" draggable="true">
+                            <span class="drag-handle">☰</span> Item 2 - Second
+                        </li>
+                        <li class="sortable-item" data-id="3" draggable="true">
+                            <span class="drag-handle">☰</span> Item 3 - Third
+                        </li>
+                        <li class="sortable-item" data-id="4" draggable="true">
+                            <span class="drag-handle">☰</span> Item 4 - Fourth
+                        </li>
+                    </ul>
+                    <div id="orderDisplay">Order: 1, 2, 3, 4</div>
+                    <script>
+                        const list = document.getElementById('list');
+                        const display = document.getElementById('orderDisplay');
+                        let draggedItem = null;
+
+                        list.addEventListener('dragstart', (e) => {
+                            draggedItem = e.target.closest('.sortable-item');
+                            draggedItem.classList.add('dragging');
+                        });
+
+                        list.addEventListener('dragend', () => {
+                            draggedItem.classList.remove('dragging');
+                            updateOrderDisplay();
+                        });
+
+                        list.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            const afterElement = getDragAfterElement(list, e.clientY);
+                            if (afterElement == null) {
+                                list.appendChild(draggedItem);
+                            } else {
+                                list.insertBefore(draggedItem, afterElement);
+                            }
+                        });
+
+                        function getDragAfterElement(container, y) {
+                            const items = [...container.querySelectorAll('.sortable-item:not(.dragging)')];
+                            return items.reduce((closest, child) => {
+                                const box = child.getBoundingClientRect();
+                                const offset = y - box.top - box.height / 2;
+                                if (offset < 0 && offset > closest.offset) {
+                                    return { offset: offset, element: child };
+                                } else {
+                                    return closest;
+                                }
+                            }, { offset: Number.NEGATIVE_INFINITY }).element;
+                        }
+
+                        function updateOrderDisplay() {
+                            const items = [...list.querySelectorAll('.sortable-item')];
+                            const order = items.map(item => item.dataset.id).join(', ');
+                            display.textContent = 'Order: ' + order;
+                        }
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Initial order:");
+        const initialOrder = await page.locator('#orderDisplay').textContent();
+        console.log(`  ${initialOrder}`);
+
+        // Get the first and last items
+        const items = page.locator('.sortable-item');
+        const firstItem = items.nth(0);
+        const lastItem = items.nth(3);
+
+        // Drag first item to the end
+        console.log("\nMoving Item 1 to the end...");
+        await firstItem.dragTo(lastItem);
+
+        // Wait a moment for the DOM to update
+        await page.waitForTimeout(100);
+
+        const newOrder = await page.locator('#orderDisplay').textContent();
+        console.log(`  ${newOrder}`);
+
+        // The order should have changed
+        expect(newOrder).not.toBe(initialOrder);
+
+        console.log("\n✅ Sortable list drag completed!");
+    });
+
+    test("Drag and drop use cases summary", async ({ page }) => {
+        console.log("\n=== Drag and Drop Use Cases ===\n");
+
+        console.log("SUPPORTED DRAG AND DROP OPERATIONS:");
+        console.log("─".repeat(50));
+        console.log("  • locator.dragTo - Drag one element to another");
+        console.log("  • page.dragAndDrop - Drag using CSS selectors");
+        console.log("  • locator.dragToPosition - Drag to x,y coordinates");
+        console.log("  • locator.dragByOffset - Drag by relative offset");
+        console.log("  • slider.setValueByPercentage - Set slider percentage");
+
+        console.log("\nCOMMON USE CASES:");
+        console.log("─".repeat(50));
+        console.log("  • Kanban boards (move cards between columns)");
+        console.log("  • Sortable lists (reorder items)");
+        console.log("  • File managers (drag files to folders)");
+        console.log("  • Shopping carts (drag products to cart)");
+        console.log("  • Image editors (position elements)");
+        console.log("  • Sliders/ranges (volume, price range, etc.)");
+        console.log("  • Resizable panels (drag dividers)");
+        console.log("  • Form builders (drag fields)");
+
+        console.log("\nNATURAL LANGUAGE EXAMPLES:");
+        console.log("─".repeat(50));
+        console.log("  Element to element:");
+        console.log("    await play(\"Drag 'Task 1' to the 'Done' column\", { page, test });");
+        console.log("");
+        console.log("  Slider operations:");
+        console.log("    await play(\"Set the volume slider to 75%\", { page, test });");
+        console.log("    await play(\"Drag the price range to $500\", { page, test });");
+        console.log("");
+        console.log("  Position-based:");
+        console.log("    await play(\"Drag the element to position (300, 200)\", { page, test });");
+        console.log("");
+        console.log("  Offset-based:");
+        console.log("    await play(\"Move the panel 100 pixels to the right\", { page, test });");
+
+        console.log("\nPLAYWRIGHT API EXAMPLES:");
+        console.log("─".repeat(50));
+        console.log("  // Element to element");
+        console.log("  await page.locator('#source').dragTo(page.locator('#target'));");
+        console.log("");
+        console.log("  // Selector-based");
+        console.log("  await page.dragAndDrop('#source', '#target');");
+        console.log("");
+        console.log("  // Mouse API for custom positioning");
+        console.log("  await page.mouse.move(startX, startY);");
+        console.log("  await page.mouse.down();");
+        console.log("  await page.mouse.move(endX, endY);");
+        console.log("  await page.mouse.up();");
+
+        console.log("\n================================\n");
+    });
+});
+
+/**
+ * iFrame Examples
+ * Demonstrates interactions with content inside iframes
+ */
+test.describe("Play AI - iFrame Examples", () => {
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Basic iframe interactions", async ({ page }) => {
+        console.log("\n=== Basic iFrame Interactions ===\n");
+
+        // Create a page with an iframe containing a form
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        .container { padding: 20px; }
+                        iframe { border: 2px solid #ccc; border-radius: 8px; }
+                        h1 { color: #333; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>Payment Form (in iframe)</h1>
+                        <iframe id="payment-frame" width="400" height="300" srcdoc="
+                            <html>
+                                <head>
+                                    <style>
+                                        body { font-family: Arial, sans-serif; padding: 20px; }
+                                        .form-group { margin-bottom: 15px; }
+                                        label { display: block; margin-bottom: 5px; font-weight: bold; }
+                                        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+                                        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+                                        button:hover { background: #45a049; }
+                                        #result { margin-top: 15px; padding: 10px; background: #e8f5e9; border-radius: 4px; display: none; }
+                                    </style>
+                                </head>
+                                <body>
+                                    <form id='paymentForm'>
+                                        <div class='form-group'>
+                                            <label for='cardNumber'>Card Number</label>
+                                            <input type='text' id='cardNumber' placeholder='1234 5678 9012 3456'>
+                                        </div>
+                                        <div class='form-group'>
+                                            <label for='expiry'>Expiry Date</label>
+                                            <input type='text' id='expiry' placeholder='MM/YY'>
+                                        </div>
+                                        <div class='form-group'>
+                                            <label for='cvv'>CVV</label>
+                                            <input type='text' id='cvv' placeholder='123'>
+                                        </div>
+                                        <button type='button' id='submitBtn' onclick='submitForm()'>Pay Now</button>
+                                        <div id='result'>Payment submitted successfully!</div>
+                                    </form>
+                                    <script>
+                                        function submitForm() {
+                                            document.getElementById('result').style.display = 'block';
+                                        }
+                                    </script>
+                                </body>
+                            </html>
+                        "></iframe>
+                    </div>
+                </body>
+            </html>
+        `);
+
+        console.log("Filling payment form inside iframe...");
+
+        // Use frameLocator to interact with elements inside the iframe
+        const frame = page.frameLocator('#payment-frame');
+
+        // Fill the card number
+        await frame.locator('#cardNumber').fill('4242424242424242');
+        console.log("  ✓ Filled card number");
+
+        // Fill expiry date
+        await frame.locator('#expiry').fill('12/25');
+        console.log("  ✓ Filled expiry date");
+
+        // Fill CVV
+        await frame.locator('#cvv').fill('123');
+        console.log("  ✓ Filled CVV");
+
+        // Click submit button
+        await frame.locator('#submitBtn').click();
+        console.log("  ✓ Clicked submit button");
+
+        // Verify the result message is shown
+        const resultVisible = await frame.locator('#result').isVisible();
+        expect(resultVisible).toBe(true);
+        console.log("  ✓ Payment form submitted successfully");
+
+        // Get text from iframe
+        const resultText = await frame.locator('#result').textContent();
+        console.log(`  Result: ${resultText}`);
+
+        console.log("\n✅ Basic iframe interactions completed!");
+    });
+
+    test("Multiple iframes on same page", async ({ page }) => {
+        console.log("\n=== Multiple iFrames ===\n");
+
+        // Create a page with multiple iframes
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        .container { padding: 20px; }
+                        .iframe-wrapper { display: inline-block; margin: 10px; vertical-align: top; }
+                        iframe { border: 2px solid #2196F3; border-radius: 8px; }
+                        h2 { color: #2196F3; margin-bottom: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>Multiple iFrames Demo</h1>
+                        <div class="iframe-wrapper">
+                            <h2>Frame 1: Counter</h2>
+                            <iframe id="frame1" width="200" height="150" srcdoc="
+                                <html>
+                                    <body style='text-align: center; padding: 20px;'>
+                                        <h3>Counter</h3>
+                                        <p id='count'>0</p>
+                                        <button id='increment' onclick='document.getElementById(&quot;count&quot;).textContent = parseInt(document.getElementById(&quot;count&quot;).textContent) + 1'>+1</button>
+                                    </body>
+                                </html>
+                            "></iframe>
+                        </div>
+                        <div class="iframe-wrapper">
+                            <h2>Frame 2: Input</h2>
+                            <iframe id="frame2" width="200" height="150" srcdoc="
+                                <html>
+                                    <body style='padding: 20px;'>
+                                        <h3>Input</h3>
+                                        <input id='textInput' type='text' placeholder='Type here...'>
+                                        <p id='echo'></p>
+                                        <script>
+                                            document.getElementById('textInput').addEventListener('input', function(e) {
+                                                document.getElementById('echo').textContent = 'Echo: ' + e.target.value;
+                                            });
+                                        </script>
+                                    </body>
+                                </html>
+                            "></iframe>
+                        </div>
+                        <div class="iframe-wrapper">
+                            <h2>Frame 3: Toggle</h2>
+                            <iframe id="frame3" width="200" height="150" srcdoc="
+                                <html>
+                                    <body style='text-align: center; padding: 20px;'>
+                                        <h3>Toggle</h3>
+                                        <label>
+                                            <input type='checkbox' id='toggle'> Enable Feature
+                                        </label>
+                                        <p id='status'>Status: OFF</p>
+                                        <script>
+                                            document.getElementById('toggle').addEventListener('change', function(e) {
+                                                document.getElementById('status').textContent = 'Status: ' + (e.target.checked ? 'ON' : 'OFF');
+                                            });
+                                        </script>
+                                    </body>
+                                </html>
+                            "></iframe>
+                        </div>
+                    </div>
+                </body>
+            </html>
+        `);
+
+        // Interact with Frame 1 - Counter
+        console.log("Frame 1 - Incrementing counter...");
+        const frame1 = page.frameLocator('#frame1');
+        await frame1.locator('#increment').click();
+        await frame1.locator('#increment').click();
+        await frame1.locator('#increment').click();
+        const count = await frame1.locator('#count').textContent();
+        console.log(`  Counter value: ${count}`);
+        expect(count).toBe('3');
+
+        // Interact with Frame 2 - Input
+        console.log("\nFrame 2 - Filling input...");
+        const frame2 = page.frameLocator('#frame2');
+        await frame2.locator('#textInput').fill('Hello from test!');
+        const echo = await frame2.locator('#echo').textContent();
+        console.log(`  ${echo}`);
+        expect(echo).toContain('Hello from test!');
+
+        // Interact with Frame 3 - Toggle
+        console.log("\nFrame 3 - Toggling checkbox...");
+        const frame3 = page.frameLocator('#frame3');
+        await frame3.locator('#toggle').check();
+        const status = await frame3.locator('#status').textContent();
+        console.log(`  ${status}`);
+        expect(status).toContain('ON');
+
+        console.log("\n✅ Multiple iframes interactions completed!");
+    });
+
+    test("Nested iframes", async ({ page }) => {
+        console.log("\n=== Nested iFrames ===\n");
+
+        // Create a page with nested iframes
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        body { padding: 20px; font-family: Arial, sans-serif; }
+                        iframe { border: 2px solid #9C27B0; border-radius: 8px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Nested iFrames Demo</h1>
+                    <p>Outer Page</p>
+                    <iframe id="outer-frame" width="500" height="350" srcdoc="
+                        <html>
+                            <head>
+                                <style>
+                                    body { padding: 15px; background: #f3e5f5; }
+                                    iframe { border: 2px solid #7B1FA2; border-radius: 4px; }
+                                </style>
+                            </head>
+                            <body>
+                                <h2>Middle Frame</h2>
+                                <p id='middle-text'>This is the middle frame</p>
+                                <iframe id='inner-frame' width='350' height='150' srcdoc='
+                                    <html>
+                                        <body style=&quot;padding: 10px; background: #e1bee7;&quot;>
+                                            <h3>Inner Frame</h3>
+                                            <button id=&quot;inner-btn&quot; onclick=&quot;document.getElementById(&apos;inner-result&apos;).textContent = &apos;Button clicked!&apos;&quot;>Click Me</button>
+                                            <p id=&quot;inner-result&quot;>Not clicked yet</p>
+                                        </body>
+                                    </html>
+                                '></iframe>
+                            </body>
+                        </html>
+                    "></iframe>
+                </body>
+            </html>
+        `);
+
+        console.log("Accessing nested iframe structure...");
+
+        // Access the outer frame
+        const outerFrame = page.frameLocator('#outer-frame');
+        const middleText = await outerFrame.locator('#middle-text').textContent();
+        console.log(`  Middle frame text: ${middleText}`);
+
+        // Access the inner frame (nested)
+        const innerFrame = outerFrame.frameLocator('#inner-frame');
+
+        // Click button in the innermost frame
+        console.log("\nClicking button in inner frame...");
+        await innerFrame.locator('#inner-btn').click();
+
+        // Verify the result
+        const innerResult = await innerFrame.locator('#inner-result').textContent();
+        console.log(`  Inner frame result: ${innerResult}`);
+        expect(innerResult).toBe('Button clicked!');
+
+        console.log("\n✅ Nested iframes interaction completed!");
+    });
+
+    test("iFrame use cases summary", async ({ page }) => {
+        console.log("\n=== iFrame Use Cases ===\n");
+
+        console.log("SUPPORTED IFRAME OPERATIONS:");
+        console.log("─".repeat(50));
+        console.log("  • iframe_frameLocator - Get frame locator");
+        console.log("  • iframe_clickInFrame - Click element in iframe");
+        console.log("  • iframe_fillInFrame - Fill input in iframe");
+        console.log("  • iframe_getTextInFrame - Get text from iframe");
+        console.log("  • iframe_waitForElementInFrame - Wait for element");
+        console.log("  • iframe_isElementVisibleInFrame - Check visibility");
+        console.log("  • iframe_selectOptionInFrame - Select dropdown");
+        console.log("  • iframe_checkInFrame - Check checkbox");
+        console.log("  • iframe_nestedFrameLocator - Access nested iframes");
+
+        console.log("\nCOMMON USE CASES:");
+        console.log("─".repeat(50));
+        console.log("  • Payment forms (Stripe, PayPal, Braintree)");
+        console.log("  • CAPTCHA widgets (reCAPTCHA, hCaptcha)");
+        console.log("  • Social embeds (YouTube, Twitter, Facebook)");
+        console.log("  • Advertisement iframes");
+        console.log("  • Third-party widgets (chat, calendars, maps)");
+        console.log("  • Legacy application embeds");
+
+        console.log("\nNATURAL LANGUAGE EXAMPLES:");
+        console.log("─".repeat(50));
+        console.log("  await play(\"Fill card number in the payment iframe\", { page, test });");
+        console.log("  await play(\"Click submit in the checkout frame\", { page, test });");
+        console.log("  await play(\"Get the confirmation message from iframe\", { page, test });");
+
+        console.log("\nPLAYWRIGHT API EXAMPLES:");
+        console.log("─".repeat(50));
+        console.log("  // Access iframe by selector");
+        console.log("  const frame = page.frameLocator('#payment-frame');");
+        console.log("  await frame.locator('#card-number').fill('4242...');");
+        console.log("");
+        console.log("  // Nested iframes");
+        console.log("  const inner = page.frameLocator('#outer').frameLocator('#inner');");
+        console.log("  await inner.locator('button').click();");
+
+        console.log("\n================================\n");
+    });
+});
+
+/**
+ * Shadow DOM Examples
+ * Demonstrates interactions with web components using Shadow DOM
+ */
+test.describe("Play AI - Shadow DOM Examples", () => {
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Basic shadow DOM interactions", async ({ page }) => {
+        console.log("\n=== Basic Shadow DOM Interactions ===\n");
+
+        // Create a page with a custom element using shadow DOM
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Shadow DOM Demo</h1>
+                    <custom-button id="myButton"></custom-button>
+                    <p id="result">Button not clicked</p>
+
+                    <script>
+                        class CustomButton extends HTMLElement {
+                            constructor() {
+                                super();
+                                const shadow = this.attachShadow({ mode: 'open' });
+                                shadow.innerHTML = \`
+                                    <style>
+                                        button {
+                                            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+                                            color: white;
+                                            border: none;
+                                            padding: 15px 30px;
+                                            font-size: 16px;
+                                            border-radius: 8px;
+                                            cursor: pointer;
+                                            transition: transform 0.2s;
+                                        }
+                                        button:hover {
+                                            transform: scale(1.05);
+                                        }
+                                        .counter {
+                                            margin-top: 10px;
+                                            font-size: 14px;
+                                            color: #666;
+                                        }
+                                    </style>
+                                    <button id="shadowBtn">Click Me!</button>
+                                    <div class="counter">Clicks: <span id="clickCount">0</span></div>
+                                \`;
+
+                                let count = 0;
+                                shadow.getElementById('shadowBtn').addEventListener('click', () => {
+                                    count++;
+                                    shadow.getElementById('clickCount').textContent = count;
+                                    this.dispatchEvent(new CustomEvent('button-click', { detail: { count } }));
+                                });
+                            }
+                        }
+                        customElements.define('custom-button', CustomButton);
+
+                        document.getElementById('myButton').addEventListener('button-click', (e) => {
+                            document.getElementById('result').textContent = 'Button clicked ' + e.detail.count + ' time(s)';
+                        });
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Interacting with shadow DOM element...");
+
+        // Playwright automatically pierces shadow DOM!
+        // We can use regular locators to find elements inside shadow roots
+        const shadowButton = page.locator('custom-button').locator('button');
+
+        // Click the button inside shadow DOM
+        await shadowButton.click();
+        console.log("  ✓ Clicked button inside shadow DOM");
+
+        await shadowButton.click();
+        await shadowButton.click();
+        console.log("  ✓ Clicked 2 more times");
+
+        // Get text from inside shadow DOM
+        const clickCount = await page.locator('custom-button').locator('#clickCount').textContent();
+        console.log(`  Click count inside shadow: ${clickCount}`);
+        expect(clickCount).toBe('3');
+
+        // Verify the result outside shadow DOM
+        const result = await page.locator('#result').textContent();
+        console.log(`  Result: ${result}`);
+        expect(result).toContain('3 time(s)');
+
+        console.log("\n✅ Basic shadow DOM interactions completed!");
+    });
+
+    test("Shadow DOM form components", async ({ page }) => {
+        console.log("\n=== Shadow DOM Form Components ===\n");
+
+        // Create custom form elements with shadow DOM
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .form-container { max-width: 400px; }
+                        h1 { color: #333; }
+                        #formResult { margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; display: none; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Custom Form Components</h1>
+                    <div class="form-container">
+                        <custom-input id="nameInput" label="Full Name" placeholder="Enter your name"></custom-input>
+                        <custom-input id="emailInput" label="Email" placeholder="Enter your email" type="email"></custom-input>
+                        <custom-checkbox id="termsCheckbox" label="I agree to the terms"></custom-checkbox>
+                        <br><br>
+                        <button id="submitBtn" onclick="submitForm()">Submit</button>
+                        <div id="formResult"></div>
+                    </div>
+
+                    <script>
+                        class CustomInput extends HTMLElement {
+                            constructor() {
+                                super();
+                                const shadow = this.attachShadow({ mode: 'open' });
+                                const label = this.getAttribute('label') || 'Input';
+                                const placeholder = this.getAttribute('placeholder') || '';
+                                const type = this.getAttribute('type') || 'text';
+
+                                shadow.innerHTML = \`
+                                    <style>
+                                        .input-wrapper { margin-bottom: 15px; }
+                                        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+                                        input {
+                                            width: 100%;
+                                            padding: 10px;
+                                            border: 2px solid #ddd;
+                                            border-radius: 6px;
+                                            font-size: 14px;
+                                            box-sizing: border-box;
+                                            transition: border-color 0.3s;
+                                        }
+                                        input:focus {
+                                            outline: none;
+                                            border-color: #667eea;
+                                        }
+                                    </style>
+                                    <div class="input-wrapper">
+                                        <label>\${label}</label>
+                                        <input type="\${type}" placeholder="\${placeholder}" id="input">
+                                    </div>
+                                \`;
+                            }
+
+                            get value() {
+                                return this.shadowRoot.getElementById('input').value;
+                            }
+                        }
+
+                        class CustomCheckbox extends HTMLElement {
+                            constructor() {
+                                super();
+                                const shadow = this.attachShadow({ mode: 'open' });
+                                const label = this.getAttribute('label') || 'Checkbox';
+
+                                shadow.innerHTML = \`
+                                    <style>
+                                        .checkbox-wrapper {
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 10px;
+                                            cursor: pointer;
+                                        }
+                                        input[type="checkbox"] {
+                                            width: 20px;
+                                            height: 20px;
+                                            cursor: pointer;
+                                        }
+                                        label { cursor: pointer; color: #555; }
+                                    </style>
+                                    <div class="checkbox-wrapper">
+                                        <input type="checkbox" id="checkbox">
+                                        <label>\${label}</label>
+                                    </div>
+                                \`;
+                            }
+
+                            get checked() {
+                                return this.shadowRoot.getElementById('checkbox').checked;
+                            }
+                        }
+
+                        customElements.define('custom-input', CustomInput);
+                        customElements.define('custom-checkbox', CustomCheckbox);
+
+                        function submitForm() {
+                            const name = document.getElementById('nameInput').value;
+                            const email = document.getElementById('emailInput').value;
+                            const agreed = document.getElementById('termsCheckbox').checked;
+
+                            const result = document.getElementById('formResult');
+                            result.style.display = 'block';
+                            result.textContent = \`Submitted: \${name}, \${email}, Terms: \${agreed ? 'Yes' : 'No'}\`;
+                        }
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Filling custom form components with shadow DOM...");
+
+        // Fill custom input components (Playwright pierces shadow DOM)
+        await page.locator('#nameInput').locator('input').fill('John Doe');
+        console.log("  ✓ Filled name input");
+
+        await page.locator('#emailInput').locator('input').fill('john@example.com');
+        console.log("  ✓ Filled email input");
+
+        // Check custom checkbox
+        await page.locator('#termsCheckbox').locator('input[type="checkbox"]').check();
+        console.log("  ✓ Checked terms checkbox");
+
+        // Submit the form
+        await page.locator('#submitBtn').click();
+        console.log("  ✓ Submitted form");
+
+        // Verify result
+        const result = await page.locator('#formResult').textContent();
+        console.log(`  Result: ${result}`);
+        expect(result).toContain('John Doe');
+        expect(result).toContain('john@example.com');
+        expect(result).toContain('Terms: Yes');
+
+        console.log("\n✅ Shadow DOM form components test completed!");
+    });
+
+    test("Using getByRole with shadow DOM", async ({ page }) => {
+        console.log("\n=== getByRole with Shadow DOM ===\n");
+
+        // Create elements with accessible roles inside shadow DOM
+        await page.setContent(`
+            <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Accessible Shadow DOM Components</h1>
+                    <custom-dialog id="myDialog"></custom-dialog>
+                    <p id="dialogResult">Dialog not opened</p>
+
+                    <script>
+                        class CustomDialog extends HTMLElement {
+                            constructor() {
+                                super();
+                                const shadow = this.attachShadow({ mode: 'open' });
+                                shadow.innerHTML = \`
+                                    <style>
+                                        .dialog-trigger { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+                                        .dialog {
+                                            display: none;
+                                            position: fixed;
+                                            top: 50%;
+                                            left: 50%;
+                                            transform: translate(-50%, -50%);
+                                            background: white;
+                                            padding: 30px;
+                                            border-radius: 12px;
+                                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                                            z-index: 1000;
+                                        }
+                                        .dialog.open { display: block; }
+                                        .dialog h2 { margin-top: 0; }
+                                        .dialog-buttons { margin-top: 20px; display: flex; gap: 10px; }
+                                        .dialog-buttons button { padding: 10px 20px; cursor: pointer; border-radius: 6px; }
+                                        .confirm { background: #4CAF50; color: white; border: none; }
+                                        .cancel { background: #f5f5f5; border: 1px solid #ddd; }
+                                        .overlay {
+                                            display: none;
+                                            position: fixed;
+                                            top: 0;
+                                            left: 0;
+                                            right: 0;
+                                            bottom: 0;
+                                            background: rgba(0,0,0,0.5);
+                                            z-index: 999;
+                                        }
+                                        .overlay.open { display: block; }
+                                    </style>
+                                    <button class="dialog-trigger" aria-label="Open Dialog">Open Dialog</button>
+                                    <div class="overlay"></div>
+                                    <div class="dialog" role="dialog" aria-labelledby="dialogTitle">
+                                        <h2 id="dialogTitle">Confirm Action</h2>
+                                        <p>Are you sure you want to proceed?</p>
+                                        <div class="dialog-buttons">
+                                            <button class="confirm" aria-label="Confirm">Confirm</button>
+                                            <button class="cancel" aria-label="Cancel">Cancel</button>
+                                        </div>
+                                    </div>
+                                \`;
+
+                                const trigger = shadow.querySelector('.dialog-trigger');
+                                const dialog = shadow.querySelector('.dialog');
+                                const overlay = shadow.querySelector('.overlay');
+                                const confirmBtn = shadow.querySelector('.confirm');
+                                const cancelBtn = shadow.querySelector('.cancel');
+
+                                trigger.addEventListener('click', () => {
+                                    dialog.classList.add('open');
+                                    overlay.classList.add('open');
+                                });
+
+                                confirmBtn.addEventListener('click', () => {
+                                    dialog.classList.remove('open');
+                                    overlay.classList.remove('open');
+                                    this.dispatchEvent(new CustomEvent('dialog-confirm'));
+                                });
+
+                                cancelBtn.addEventListener('click', () => {
+                                    dialog.classList.remove('open');
+                                    overlay.classList.remove('open');
+                                    this.dispatchEvent(new CustomEvent('dialog-cancel'));
+                                });
+                            }
+                        }
+                        customElements.define('custom-dialog', CustomDialog);
+
+                        document.getElementById('myDialog').addEventListener('dialog-confirm', () => {
+                            document.getElementById('dialogResult').textContent = 'Dialog confirmed!';
+                        });
+                        document.getElementById('myDialog').addEventListener('dialog-cancel', () => {
+                            document.getElementById('dialogResult').textContent = 'Dialog cancelled!';
+                        });
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Using getByRole to interact with shadow DOM...");
+
+        // Use getByRole - it works across shadow boundaries!
+        await page.getByRole('button', { name: 'Open Dialog' }).click();
+        console.log("  ✓ Opened dialog using getByRole");
+
+        // Wait for dialog to be visible
+        await page.waitForTimeout(100);
+
+        // Click confirm button using getByRole
+        await page.getByRole('button', { name: 'Confirm' }).click();
+        console.log("  ✓ Clicked confirm using getByRole");
+
+        // Verify result
+        const result = await page.locator('#dialogResult').textContent();
+        console.log(`  Result: ${result}`);
+        expect(result).toBe('Dialog confirmed!');
+
+        console.log("\n✅ getByRole with shadow DOM completed!");
+    });
+
+    test("Shadow DOM use cases summary", async ({ page }) => {
+        console.log("\n=== Shadow DOM Use Cases ===\n");
+
+        console.log("PLAYWRIGHT SHADOW DOM SUPPORT:");
+        console.log("─".repeat(50));
+        console.log("  Playwright automatically pierces open shadow DOM!");
+        console.log("  Regular locators work inside shadow roots.");
+        console.log("");
+        console.log("  Supported methods that work across shadow boundaries:");
+        console.log("  • page.locator('selector') - CSS selectors");
+        console.log("  • page.getByRole() - ARIA roles");
+        console.log("  • page.getByText() - Text content");
+        console.log("  • page.getByLabel() - Form labels");
+        console.log("  • page.getByPlaceholder() - Input placeholders");
+        console.log("  • page.getByTestId() - Test IDs");
+
+        console.log("\nCOMMON USE CASES:");
+        console.log("─".repeat(50));
+        console.log("  • Web Components (custom elements)");
+        console.log("  • UI Libraries (Shoelace, Lit, Stencil)");
+        console.log("  • Design Systems with encapsulated styles");
+        console.log("  • Third-party widgets");
+        console.log("  • Micro-frontends");
+
+        console.log("\nNATURAL LANGUAGE EXAMPLES:");
+        console.log("─".repeat(50));
+        console.log("  await play(\"Click the submit button in the custom form\", { page, test });");
+        console.log("  await play(\"Fill the email input in the custom field\", { page, test });");
+        console.log("  await play(\"Check the terms checkbox\", { page, test });");
+
+        console.log("\nPLAYWRIGHT API EXAMPLES:");
+        console.log("─".repeat(50));
+        console.log("  // Direct locator (pierces shadow DOM)");
+        console.log("  await page.locator('custom-element button').click();");
+        console.log("");
+        console.log("  // Using getByRole (recommended)");
+        console.log("  await page.getByRole('button', { name: 'Submit' }).click();");
+        console.log("");
+        console.log("  // Chained locators for specificity");
+        console.log("  await page.locator('custom-input').locator('input').fill('value');");
+        console.log("");
+        console.log("  // For closed shadow roots, use evaluate");
+        console.log("  await page.evaluate(() => {");
+        console.log("    const host = document.querySelector('custom-element');");
+        console.log("    host.shadowRoot.querySelector('button').click();");
+        console.log("  });");
+
+        console.log("\n================================\n");
+    });
+});
+
+/**
  * Integration Example: Code Generation + Auto-Healing
  * This demonstrates the complete workflow for low-maintenance testing
  */
