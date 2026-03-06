@@ -16,7 +16,9 @@ import {
     getHealingStats,
     // Cache imports
     getDefaultCacheManager,
-    CacheManager
+    CacheManager,
+    // Multi-page imports
+    getMultiPageManagerFromPage
 } from "play-ai";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
@@ -1017,6 +1019,272 @@ test.describe("Play AI - Response Caching Examples", () => {
             { page, test },
             options
         );
+    });
+});
+
+/**
+ * Multi-Tab / Multi-Page Examples
+ * These tests demonstrate how to work with multiple browser tabs/pages
+ */
+test.describe("Play AI - Multi-Tab / Multi-Page Examples", () => {
+    test.beforeEach(async ({ page }) => {
+        await page.goto("https://www.saucedemo.com/");
+    });
+
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Get current page information", async ({ page }) => {
+        console.log("\n=== Page Information ===\n");
+
+        // Get current page URL
+        const url = await play(
+            "get the current page URL",
+            { page, test },
+            options
+        );
+        console.log(`Current URL: ${url}`);
+
+        // Get current page title
+        const title = await play(
+            "get the current page title",
+            { page, test },
+            options
+        );
+        console.log(`Current Title: ${title}`);
+
+        expect(url).toContain("saucedemo.com");
+    });
+
+    test("Get page count and all pages info", async ({ page }) => {
+        console.log("\n=== Multi-Page Information ===\n");
+
+        // Get number of open pages
+        const countResult = await play(
+            "get the number of open pages",
+            { page, test },
+            options
+        );
+        console.log(`Page count: ${countResult}`);
+
+        // Get info about all pages
+        const pagesResult = await play(
+            "get information about all open pages",
+            { page, test },
+            options
+        );
+        console.log("All pages:", pagesResult);
+    });
+
+    test("Open new tab and switch between tabs", async ({ page }) => {
+        console.log("\n=== Open New Tab Demo ===\n");
+
+        // Open a new tab with a URL
+        console.log("Opening new tab...");
+        await play(
+            "open a new tab and navigate to https://www.example.com",
+            { page, test },
+            options
+        );
+
+        // Get page count after opening new tab
+        const manager = getMultiPageManagerFromPage(page);
+        await manager.initialize();
+        const pages = await manager.getAllPages();
+        console.log(`Pages after opening new tab: ${pages.length}`);
+
+        // Switch to the new tab by index
+        console.log("Switching to new tab (index 1)...");
+        await play(
+            "switch to the page at index 1",
+            { page, test },
+            options
+        );
+
+        // Switch back to original tab
+        console.log("Switching back to original tab (index 0)...");
+        await play(
+            "switch to the page at index 0",
+            { page, test },
+            options
+        );
+
+        console.log("\n✅ Successfully switched between tabs!");
+    });
+
+    test("Switch to page by URL pattern", async ({ page }) => {
+        console.log("\n=== Switch by URL Demo ===\n");
+
+        // Open multiple tabs
+        const context = page.context();
+        const newPage1 = await context.newPage();
+        await newPage1.goto("https://www.example.com");
+
+        const newPage2 = await context.newPage();
+        await newPage2.goto("https://playwright.dev");
+
+        // Get all pages
+        const manager = getMultiPageManagerFromPage(page);
+        await manager.initialize();
+        const pages = await manager.getAllPages();
+        console.log(`Total pages: ${pages.length}`);
+        pages.forEach((p, i) => console.log(`  ${i}: ${p.url}`));
+
+        // Switch to page by URL pattern
+        console.log("\nSwitching to page containing 'playwright'...");
+        await play(
+            "switch to the page with URL containing playwright",
+            { page, test },
+            options
+        );
+
+        // Switch to page by URL pattern
+        console.log("Switching to page containing 'example'...");
+        await play(
+            "switch to the page with URL containing example",
+            { page, test },
+            options
+        );
+
+        // Switch back to saucedemo
+        console.log("Switching to page containing 'saucedemo'...");
+        await play(
+            "switch to the page with URL containing saucedemo",
+            { page, test },
+            options
+        );
+
+        console.log("\n✅ Successfully switched by URL pattern!");
+
+        // Clean up
+        await newPage1.close();
+        await newPage2.close();
+    });
+
+    test("Close pages", async ({ page }) => {
+        console.log("\n=== Close Pages Demo ===\n");
+
+        // Open multiple tabs
+        const context = page.context();
+        const newPage1 = await context.newPage();
+        await newPage1.goto("https://www.example.com");
+
+        const newPage2 = await context.newPage();
+        await newPage2.goto("https://playwright.dev");
+
+        // Get initial page count
+        let pageCount = context.pages().length;
+        console.log(`Initial page count: ${pageCount}`);
+
+        // Close page by index
+        console.log("Closing page at index 2...");
+        await play(
+            "close the page at index 2",
+            { page, test },
+            options
+        );
+
+        pageCount = context.pages().length;
+        console.log(`Page count after closing: ${pageCount}`);
+
+        // Close another page
+        console.log("Closing page at index 1...");
+        await play(
+            "close the page at index 1",
+            { page, test },
+            options
+        );
+
+        pageCount = context.pages().length;
+        console.log(`Final page count: ${pageCount}`);
+
+        console.log("\n✅ Successfully closed pages!");
+    });
+
+    test("Programmatic multi-page management", async ({ page }) => {
+        console.log("\n=== Programmatic Multi-Page Management ===\n");
+
+        // Get the multi-page manager
+        const manager = getMultiPageManagerFromPage(page);
+        await manager.initialize();
+
+        // Get initial page count
+        console.log(`Initial pages: ${manager.getPageCount()}`);
+
+        // Open new pages using context
+        const context = page.context();
+        const newPage = await context.newPage();
+        await newPage.goto("https://www.example.com");
+        await newPage.waitForLoadState("domcontentloaded");
+
+        // Re-initialize to pick up new page
+        await manager.initialize();
+
+        // Get all pages
+        const pages = await manager.getAllPages();
+        console.log(`\nAll pages (${pages.length}):`);
+        for (const p of pages) {
+            console.log(`  [${p.index}] ${p.title} - ${p.url} ${p.isActive ? "(active)" : ""}`);
+        }
+
+        // Switch to the new page
+        const switchResult = await manager.switchToPage({ index: 1 });
+        if (switchResult.success) {
+            console.log(`\nSwitched to: ${switchResult.pageInfo?.title}`);
+        }
+
+        // Switch back
+        await manager.switchToPage({ index: 0 });
+        console.log("Switched back to original page");
+
+        // Close other pages
+        const closedCount = await manager.closeOtherPages();
+        console.log(`Closed ${closedCount} other pages`);
+
+        console.log(`\nFinal page count: ${manager.getPageCount()}`);
+        console.log("\n✅ Programmatic management complete!");
+    });
+
+    test("Demonstrate multi-tab use cases", async ({ page }) => {
+        console.log("\n=== Multi-Tab Use Cases ===\n");
+
+        console.log("Common scenarios for multi-tab testing:\n");
+
+        console.log("1. EXTERNAL LINKS");
+        console.log("   - Click 'Terms of Service' link that opens in new tab");
+        console.log("   - Verify content in new tab");
+        console.log("   - Switch back to original page");
+
+        console.log("\n2. OAUTH FLOWS");
+        console.log("   - Click 'Login with Google' button");
+        console.log("   - Handle OAuth popup window");
+        console.log("   - Complete authentication");
+        console.log("   - Return to original page");
+
+        console.log("\n3. PRINT PREVIEWS");
+        console.log("   - Click 'Print' button");
+        console.log("   - Switch to print preview window");
+        console.log("   - Verify print layout");
+        console.log("   - Close preview");
+
+        console.log("\n4. FILE OPERATIONS");
+        console.log("   - Click download link");
+        console.log("   - Handle file download dialog");
+
+        console.log("\n5. MULTI-STEP WORKFLOWS");
+        console.log("   - Open product in new tab");
+        console.log("   - Compare products across tabs");
+        console.log("   - Make decisions and complete checkout");
+
+        console.log("\nNATURAL LANGUAGE COMMANDS:");
+        console.log("  await play('Click the link that opens in new tab', { page, test });");
+        console.log("  await play('Switch to the new tab', { page, test });");
+        console.log("  await play('Switch to page containing checkout', { page, test });");
+        console.log("  await play('Close the current tab', { page, test });");
+        console.log("  await play('Get all open pages', { page, test });");
+
+        console.log("\n================================\n");
     });
 });
 

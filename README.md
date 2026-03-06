@@ -6,6 +6,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 
 - **Multi-Provider Support**: OpenAI, Anthropic Claude, Google Gemini, Ollama
 - **Response Caching**: Reduce API costs by 80%+ with intelligent caching
+- **Multi-Tab / Multi-Page**: Handle complex scenarios with multiple browser tabs
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
@@ -399,6 +400,68 @@ npx play-ai cache cleanup
 
 *For identical task + DOM combinations
 
+## Multi-Tab / Multi-Page Support
+
+Handle complex scenarios involving multiple browser tabs or pages.
+
+### Basic Multi-Tab Operations
+
+```typescript
+// Get current page info
+const url = await play("get the current page URL", { page, test });
+const title = await play("get the current page title", { page, test });
+
+// Open a new tab
+await play("open a new tab and navigate to https://example.com", { page, test });
+
+// Switch between tabs
+await play("switch to the page at index 1", { page, test });
+await play("switch to the page with URL containing checkout", { page, test });
+
+// Close tabs
+await play("close the current tab", { page, test });
+await play("close the page at index 2", { page, test });
+```
+
+### Get All Pages Info
+
+```typescript
+// Get number of open pages
+const count = await play("get the number of open pages", { page, test });
+
+// Get info about all pages
+const pages = await play("get information about all open pages", { page, test });
+// Returns: { pages: [{ index, url, title, isActive }, ...], count }
+```
+
+### Programmatic Multi-Page Management
+
+```typescript
+import { getMultiPageManagerFromPage } from "play-ai";
+
+const manager = getMultiPageManagerFromPage(page);
+await manager.initialize();
+
+// Get all pages
+const pages = await manager.getAllPages();
+
+// Switch to a page
+await manager.switchToPage({ index: 1 });
+await manager.switchToPage({ urlPattern: /checkout/ });
+
+// Close other pages
+await manager.closeOtherPages();
+```
+
+### Multi-Tab Use Cases
+
+| Use Case | Description |
+|----------|-------------|
+| External links | Links that open in new tabs (Terms, Privacy) |
+| OAuth flows | Handle OAuth popup windows |
+| Print previews | Switch to print preview windows |
+| Multi-step workflows | Compare products across tabs |
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -466,6 +529,15 @@ tests/
     │   ├── View cache statistics
     │   ├── Cache with parallel execution
     │   └── Demonstrate cache benefits
+    │
+    ├── Multi-Tab / Multi-Page Examples
+    │   ├── Get current page information
+    │   ├── Get page count and all pages info
+    │   ├── Open new tab and switch between tabs
+    │   ├── Switch to page by URL pattern
+    │   ├── Close pages
+    │   ├── Programmatic multi-page management
+    │   └── Demonstrate multi-tab use cases
     │
     └── Complete Workflow Example
         └── Generate + Run + Auto-Heal
