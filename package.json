@@ -1,19 +1,30 @@
 {
   "name": "play-ai-examples",
   "version": "1.0.0",
-  "description": "",
+  "description": "Example project demonstrating play-ai for AI-powered Playwright testing",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "PLAY_AI_DEBUG=true playwright test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "playwright",
+    "testing",
+    "AI",
+    "openai",
+    "anthropic",
+    "gemini",
+    "ollama"
+  ],
+  "author": "muralidharan92",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "@playwright/test": "^1.50.1",
     "@types/node": "^22.13.1",
-    "play-ai": "^1.0.4"
+    "play-ai": "^1.0.4",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "dotenv": "^16.4.7"

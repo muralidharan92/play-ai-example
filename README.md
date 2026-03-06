@@ -1,241 +1,230 @@
-# Play AI
+# Play AI Examples
 
-Run Playwright tests efficiently using AI.
+Example project demonstrating how to use [play-ai](https://github.com/muralidharan92/play-ai) for AI-powered Playwright testing.
 
-## Installation
+## Features
 
-1. Install the `play-ai` package as a development dependency:
+- **Multi-Provider Support**: OpenAI, Anthropic Claude, Google Gemini, Ollama
+- **Snapshot Strategies**: Full page, targeted extraction, auto selection
+- **Command Chaining**: Single and batched commands
+- **Data Extraction**: Querying page content with natural language
 
-```bash
-npm install -D play-ai
-```
+## Quick Start
 
-2. Set up OpenAI API key:
-
-```bash
-export OPENAI_API_KEY='sk-...'
-```
-
-3. Set up maximum task prompt character count (by default set to 2000):
+### 1. Install Dependencies
 
 ```bash
-export MAX_TASK_CHARS='2000'
+npm install
 ```
 
-4. Import and use the `play` function in your test scripts:
+### 2. Install Playwright Browsers
 
-```ts
-import { expect, test, Page } from "@playwright/test";
+```bash
+npx playwright install chromium
+```
+
+### 3. Configure Environment
+
+```bash
+cp .env.example .env
+# Edit .env and add your API key
+```
+
+### 4. Run Tests
+
+```bash
+# With OpenAI (default)
+OPENAI_API_KEY='sk-...' npm test
+
+# With Anthropic Claude
+ANTHROPIC_API_KEY='sk-ant-...' PLAY_AI_PROVIDER=anthropic npm test
+
+# With Google Gemini
+GEMINI_API_KEY='...' PLAY_AI_PROVIDER=gemini npm test
+
+# With Ollama (local)
+PLAY_AI_PROVIDER=ollama npm test
+```
+
+## Usage Examples
+
+### Basic Usage
+
+```typescript
 import { play } from "play-ai";
-import * as dotenv from "dotenv";
 
-dotenv.config();
-const options = undefined;
+await play("Click the Login button", { page, test });
+```
 
-test.describe("Playwright AI Integration", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("https://www.saucedemo.com/");
-  });
+### Chained Commands
 
-  test.afterEach(async ({ page }) => {
-    await page.close();
-  });
+```typescript
+await play([
+    "Type 'username' in the Username field",
+    "Type 'password' in the Password field",
+    "Click the Login button"
+], { page, test });
+```
 
-  test("AI-Powered Playwright Test", async ({ page }) => {
-    await play(
-      "Type 'standard_user' in the Username field",
-      { page, test },
-      options
-    );
-    await play(
-      "Type 'secret_sauce' in the Password field",
-      { page, test },
-      options
-    );
-    await play("Click the Login button", { page, test }, options);
+### Extract Data
 
-    const headerText = await play(
-      "Retrieve the header logo text",
-      { page, test },
-      options
-    );
-    expect(headerText).toBe("Swag Labs");
-  });
+```typescript
+const headerText = await play(
+    "get the header logo text",
+    { page, test }
+);
+expect(headerText).toBe("Swag Labs");
+```
+
+## Multi-Provider Configuration
+
+### OpenAI (Default)
+
+```typescript
+await play("Click Login", { page, test }, {
+    provider: "openai",
+    model: "gpt-4o",
+    openaiApiKey: process.env.OPENAI_API_KEY
 });
 ```
 
-5. You can also chain multiple prompts in the `play` function within your test scripts:
+### Anthropic Claude
 
-```ts
-import { expect, test, Page } from "@playwright/test";
-import { play } from "play-ai";
-import * as dotenv from "dotenv";
-
-const options = undefined;
-dotenv.config();
-
-test.describe("Playwright Integration With AI Suite", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("https://www.saucedemo.com/");
-  });
-
-  test.afterEach(async ({ page }) => {
-    await page.close();
-  });
-
-  test("PW With AI Test With Nested Task", async ({ page }) => {
-    await play(
-      [
-        `Type "standard_user" in the Username field`,
-        `Type "secret_sauce" in the Password field`,
-        `Click the Login button`,
-      ],
-      { page, test },
-      options
-    );
-
-    const headerLabelText = await play(
-      "get the header logo label text",
-      { page, test },
-      options
-    );
-
-    expect(headerLabelText).toBe("Swag Labs");
-
-    const firstLinkText = await play(
-      "get the first inventory item name from inventory list",
-      { page, test },
-      options
-    );
-    expect(firstLinkText).toBe("Sauce Labs Backpack");
-  });
+```typescript
+await play("Click Login", { page, test }, {
+    provider: "anthropic",
+    model: "claude-sonnet-4-20250514",
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY
 });
 ```
 
-## Execute
+### Google Gemini
 
-To execute run the following command:
-
-```sh
-npm run test
+```typescript
+await play("Click Login", { page, test }, {
+    provider: "gemini",
+    model: "gemini-1.5-pro",
+    geminiApiKey: process.env.GEMINI_API_KEY
+});
 ```
 
-## Usage
+### Ollama (Local)
 
-Derive Playwright actions using plain text commands:
-
-```ts
-play("<your prompt>", { page, test });
+```typescript
+await play("Click Login", { page, test }, {
+    provider: "ollama",
+    model: "llama3.1",
+    ollamaBaseUrl: "http://localhost:11434"
+});
 ```
 
-### Debugging
+## Snapshot Strategies
 
-Enable debugging with:
+Control how Play AI captures page content to optimize token usage:
 
-```ts
-await play("Retrieve the header text", { page, test }, { debug: true });
+### Full Page (Default)
+
+```typescript
+await play("Click Login", { page, test }, {
+    snapshotStrategy: "full"
+});
 ```
 
-or set:
+### Targeted (Reduced Tokens)
 
-```bash
-export PLAY_AI_DEBUG=true
+```typescript
+await play("Click Login", { page, test }, {
+    snapshotStrategy: "targeted",
+    domExtractorConfig: {
+        maxContainerLength: 5000,
+        preferSmallestContainer: true
+    }
+});
 ```
 
-## Supported Browsers
+### Auto (Smart Selection)
 
-Play AI supports all Playwright-compatible browsers.
-
-## Configuration Options
-
-```ts
-const options = {
-  debug: true,
-  model: "gpt-4O",
-  openaiApiKey: "sk-...",
-};
+```typescript
+await play("Click Login", { page, test }, {
+    snapshotStrategy: "auto"
+});
 ```
 
-## Why Play AI?
+## Environment Variables
 
-| Feature                        | Traditional Testing | AI-Powered Testing |
-| ------------------------------ | ------------------- | ------------------ |
-| **Selector Dependency**        | High                | Low                |
-| **Implementation Speed**       | Slow                | Fast               |
-| **Handling Complex Scenarios** | Difficult           | Easier             |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `PLAY_AI_PROVIDER` | AI provider to use | `openai`, `anthropic`, `gemini`, `ollama` |
+| `PLAY_AI_DEBUG` | Enable debug logging | `true` |
+| `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
+| `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
+| `GEMINI_API_KEY` | Google Gemini API key | `...` |
+| `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
+| `OLLAMA_MODEL` | Ollama model name | `llama3.1` |
+
+## Test Structure
+
+```
+tests/
+└── example.spec.ts
+    ├── Basic Examples
+    │   ├── Login with single commands
+    │   ├── Login with chained commands
+    │   └── Extract inventory data
+    │
+    ├── Provider Configuration Examples
+    │   ├── OpenAI provider
+    │   ├── Anthropic Claude provider
+    │   ├── Google Gemini provider
+    │   └── Ollama local provider
+    │
+    └── Snapshot Strategy Examples
+        ├── Full page snapshot
+        ├── Targeted snapshot
+        └── Auto snapshot
+```
 
 ## Supported Actions
 
-- `page.goto`
-- `locator.click`
-- `locator.fill`
-- `locator.textContent`
-- `locator.blur`
-- `locator.boundingBox`
-- `locator.check`
-- `locator.clear`
-- `locator.count`
-- `locator.getAttribute`
-- `locator.innerHTML`
-- `locator.innerText`
-- `locator.inputValue`
-- `locator.isChecked`
-- `locator.isEditable`
-- `locator.isEnabled`
-- `locator.isVisible`
-- `locator.uncheck`
+- `page.goto` - Navigate to URL
+- `locator.click` - Click element
+- `locator.fill` - Fill input field
+- `locator.textContent` - Get text content
+- `locator.blur` - Remove focus
+- `locator.boundingBox` - Get element bounds
+- `locator.check` / `locator.uncheck` - Checkbox actions
+- `locator.clear` - Clear input
+- `locator.count` - Count elements
+- `locator.getAttribute` - Get attribute value
+- `locator.innerHTML` / `locator.innerText` - Get HTML/text
+- `locator.inputValue` - Get input value
+- `locator.isChecked` / `locator.isEditable` / `locator.isEnabled` / `locator.isVisible` - State checks
+- `locator.hover` - Hover on element
+- `locator.dblclick` - Double click
+- `locator.scrollIntoView` - Scroll element into view
 
-## Pricing
+## Debugging
 
-Play AI is free, but OpenAI API calls may incur costs. See OpenAI’s [pricing](https://openai.com/pricing/).
+Enable debug mode to see detailed logs:
 
-## Related Projects
-
-| Criteria                                                                              | Play-AI | Auto Playwright | ZeroStep  |
-| ------------------------------------------------------------------------------------- | ------- | --------------- | --------- |
-| Uses OpenAI API                                                                       | ✅ Yes  | ✅ Yes          | ❌ No[^3] |
-| Uses plain-text prompts                                                               | ✅ Yes  | ✅ Yes          | ❌ No     |
-| Uses [`functions`](https://www.npmjs.com/package/openai#automated-function-calls) SDK | ✅ Yes  | ✅ Yes          | ❌ No     |
-| Uses HTML sanitization                                                                | ✅ Yes  | ✅ Yes          | ❌ No     |
-| Uses Playwright API                                                                   | ✅ Yes  | ✅ Yes          | ❌ No[^4] |
-| Uses screenshots                                                                      | ❌ No   | ❌ No           | ✅ Yes    |
-| Uses queue                                                                            | ❌ No   | ❌ No           | ✅ Yes    |
-| Uses WebSockets                                                                       | ❌ No   | ❌ No           | ✅ Yes    |
-| Snapshots                                                                             | HTML    | HTML            | DOM       |
-| Implements parallelism                                                                | ✅ Yes  | ❌ No           | ✅ Yes    |
-| Allows scrolling                                                                      | ✅ Yes  | ❌ No           | ✅ Yes    |
-| Provides fixtures                                                                     | ✅ Yes  | ❌ No           | ✅ Yes    |
-| License                                                                               | MIT     | MIT             | MIT       |
-
----
-
-Play AI simplifies Playwright automation using natural language commands, making test creation faster and more intuitive. 🚀
-
-<details>
-  <summary>Play-AI License</summary>
-
-```
-MIT License
-
-Copyright (c) 2025 Muralidharan Rajendran (muralidharan92)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+```bash
+PLAY_AI_DEBUG=true npm test
 ```
 
-</details>
+Or in code:
+
+```typescript
+await play("Click Login", { page, test }, { debug: true });
+```
+
+## Run Tests Headed
+
+See the browser during test execution:
+
+```bash
+npm test -- --headed
+```
+
+## License
+
+MIT
