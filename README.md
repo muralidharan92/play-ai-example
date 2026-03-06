@@ -5,6 +5,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 ## Features
 
 - **Multi-Provider Support**: OpenAI, Anthropic Claude, Google Gemini, Ollama
+- **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Parallel Execution**: Extract multiple data points concurrently
 - **Snapshot Strategies**: Full page, targeted extraction, auto selection
 - **Command Chaining**: Single and batched commands
@@ -207,6 +208,81 @@ interface ParallelResult {
 | Sequential actions (fill → click → verify) | ❌ No |
 | Actions that depend on each other | ❌ No |
 
+## Code Generation
+
+Generate standalone Playwright tests from natural language. After the first run, tests execute **without AI API calls** - saving costs and improving speed.
+
+### Basic Usage
+
+```typescript
+import {
+    play,
+    startCodeGeneration,
+    exportGeneratedCode
+} from "play-ai";
+
+test("Generate login test", async ({ page }) => {
+    // 1. Start collecting actions
+    startCodeGeneration("https://www.saucedemo.com/", "Login test");
+
+    await page.goto("https://www.saucedemo.com/");
+
+    // 2. Run with code generation enabled
+    await play("Type 'user' in username", { page, test }, { generateCode: true });
+    await play("Type 'pass' in password", { page, test }, { generateCode: true });
+    await play("Click Login", { page, test }, { generateCode: true });
+
+    // 3. Export to standalone Playwright file
+    exportGeneratedCode("./generated/login.spec.ts", {
+        testName: "Login with credentials",
+        testDescribe: "Auth Tests"
+    });
+});
+```
+
+### Generated Output
+
+```typescript
+// ./generated/login.spec.ts - Runs WITHOUT play-ai!
+import { test, expect } from "@playwright/test";
+
+test.describe("Auth Tests", () => {
+    test.beforeEach(async ({ page }) => {
+        await page.goto("https://www.saucedemo.com/");
+    });
+
+    test("Login with credentials", async ({ page }) => {
+        // Task: Type 'user' in username
+        await page.locator('[data-test="username"]').fill("user");
+
+        // Task: Type 'pass' in password
+        await page.locator('[data-test="password"]').fill("pass");
+
+        // Task: Click Login
+        await page.locator('[data-test="login-button"]').click();
+    });
+});
+```
+
+### Code Generation API
+
+| Function | Description |
+|----------|-------------|
+| `startCodeGeneration(baseUrl?, testName?)` | Start collecting actions |
+| `exportGeneratedCode(path, options?)` | Write to .spec.ts file |
+| `isCodeGenerationActive()` | Check if collecting |
+| `getCollectedActionsCount()` | Get action count |
+| `cancelCodeGeneration()` | Cancel without saving |
+
+### Benefits
+
+| | First Run | After Generation |
+|---|-----------|-----------------|
+| AI API calls | Yes | **No** |
+| Cost | API cost | **Free** |
+| Speed | ~2-5s/action | **~50ms/action** |
+| Dependencies | play-ai | **None** |
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -215,6 +291,8 @@ interface ParallelResult {
 | `PLAY_AI_DEBUG` | Enable debug logging | `true` |
 | `PLAY_AI_PARALLEL` | Enable parallel test execution | `true`, `false` |
 | `PLAY_AI_WORKERS` | Number of parallel workers | `4` |
+| `PLAY_AI_GENERATE_CODE` | Enable code generation mode | `true` |
+| `PLAY_AI_CODE_OUTPUT_DIR` | Output directory for generated tests | `./generated` |
 | `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
 | `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
 | `GEMINI_API_KEY` | Google Gemini API key | `...` |
@@ -242,10 +320,15 @@ tests/
     │   ├── Targeted snapshot
     │   └── Auto snapshot
     │
-    └── Parallel Execution Examples
-        ├── Extract multiple data points in parallel
-        ├── Parallel execution with concurrency limit
-        └── Parallel execution with error handling
+    ├── Parallel Execution Examples
+    │   ├── Extract multiple data points in parallel
+    │   ├── Parallel execution with concurrency limit
+    │   └── Parallel execution with error handling
+    │
+    └── Code Generation Examples
+        ├── Generate login test from natural language
+        ├── Generate inventory browsing test
+        └── Generate add to cart test
 ```
 
 ## Supported Actions

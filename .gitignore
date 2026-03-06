@@ -7,3 +7,6 @@ node_modules/
 .env
 /dist
 
+# Generated tests (from code generation)
+/generated/
+

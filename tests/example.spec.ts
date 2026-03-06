@@ -1,6 +1,16 @@
 import { expect, test } from "@playwright/test";
-import { play, playParallel, playParallelWithLimit } from "play-ai";
+import {
+    play,
+    playParallel,
+    playParallelWithLimit,
+    startCodeGeneration,
+    exportGeneratedCode,
+    isCodeGenerationActive,
+    getCollectedActionsCount
+} from "play-ai";
 import * as dotenv from "dotenv";
+import * as fs from "fs";
+import * as path from "path";
 
 dotenv.config();
 
@@ -467,5 +477,163 @@ test.describe("Play AI - Parallel Execution Examples", () => {
 
         // Second might fail but shouldn't crash the test
         console.log("Second task result:", results[1]);
+    });
+});
+
+/**
+ * Code Generation Examples
+ * These tests demonstrate how to generate standalone Playwright tests
+ * that can run without play-ai or AI API calls after the first run
+ */
+test.describe("Play AI - Code Generation Examples", () => {
+    const outputDir = "./generated";
+
+    test.beforeAll(() => {
+        // Ensure output directory exists
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+    });
+
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Generate login test from natural language", async ({ page }) => {
+        // Start code generation - this begins collecting all actions
+        startCodeGeneration("https://www.saucedemo.com/", "Login flow");
+
+        // Verify code generation is active
+        expect(isCodeGenerationActive()).toBe(true);
+
+        await page.goto("https://www.saucedemo.com/");
+
+        // Run tests with generateCode: true to collect actions
+        const codeGenOptions = { ...options, generateCode: true };
+
+        await play(
+            `Type "standard_user" in the Username field`,
+            { page, test },
+            codeGenOptions
+        );
+
+        await play(
+            `Type "secret_sauce" in the Password field`,
+            { page, test },
+            codeGenOptions
+        );
+
+        await play("Click the Login button", { page, test }, codeGenOptions);
+
+        // Verify login worked
+        const headerText = await play(
+            "get the header logo label text",
+            { page, test },
+            codeGenOptions
+        );
+
+        expect(headerText).toBe("Swag Labs");
+
+        // Check that actions were collected
+        const actionCount = getCollectedActionsCount();
+        expect(actionCount).toBeGreaterThan(0);
+        console.log(`\nCollected ${actionCount} actions for code generation`);
+
+        // Export to a standalone Playwright test file
+        const outputFile = path.join(outputDir, "login.spec.ts");
+        const result = exportGeneratedCode(outputFile, {
+            testName: "Login with valid credentials",
+            testDescribe: "Authentication Tests",
+            includeComments: true
+        });
+
+        expect(result).not.toBeNull();
+        expect(fs.existsSync(outputFile)).toBe(true);
+
+        console.log(`\n✅ Generated standalone test: ${outputFile}`);
+        console.log("Run it without play-ai: npx playwright test generated/login.spec.ts");
+    });
+
+    test("Generate inventory browsing test", async ({ page }) => {
+        // Start a new code generation session
+        startCodeGeneration("https://www.saucedemo.com/", "Browse inventory");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        const codeGenOptions = { ...options, generateCode: true };
+
+        // Login first using chained commands
+        await play(
+            [
+                `Type "standard_user" in the Username field`,
+                `Type "secret_sauce" in the Password field`,
+                `Click the Login button`
+            ],
+            { page, test },
+            codeGenOptions
+        );
+
+        // Browse inventory
+        const firstItem = await play(
+            "get the first inventory item name from inventory list",
+            { page, test },
+            codeGenOptions
+        );
+
+        expect(firstItem).toBe("Sauce Labs Backpack");
+
+        // Export generated test
+        const outputFile = path.join(outputDir, "inventory.spec.ts");
+        const result = exportGeneratedCode(outputFile, {
+            testName: "Browse inventory items",
+            testDescribe: "Inventory Tests"
+        });
+
+        expect(result).not.toBeNull();
+        console.log(`\n✅ Generated: ${outputFile}`);
+    });
+
+    test("Generate add to cart test", async ({ page }) => {
+        startCodeGeneration("https://www.saucedemo.com/", "Add to cart flow");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        const codeGenOptions = { ...options, generateCode: true };
+
+        // Login
+        await play(
+            [
+                `Type "standard_user" in the Username field`,
+                `Type "secret_sauce" in the Password field`,
+                `Click the Login button`
+            ],
+            { page, test },
+            codeGenOptions
+        );
+
+        // Add first item to cart
+        await play(
+            "Click the Add to cart button for the first inventory item",
+            { page, test },
+            codeGenOptions
+        );
+
+        // Verify cart badge shows 1
+        const cartBadge = await play(
+            "get the shopping cart badge text",
+            { page, test },
+            codeGenOptions
+        );
+
+        expect(cartBadge).toBe("1");
+
+        // Export
+        const outputFile = path.join(outputDir, "add-to-cart.spec.ts");
+        exportGeneratedCode(outputFile, {
+            testName: "Add item to cart",
+            testDescribe: "Shopping Cart Tests"
+        });
+
+        console.log(`\n✅ Generated: ${outputFile}`);
     });
 });
