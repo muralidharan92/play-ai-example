@@ -7,6 +7,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 - **Multi-Provider Support**: OpenAI, Anthropic Claude, Google Gemini, Ollama
 - **Response Caching**: Reduce API costs by 80%+ with intelligent caching
 - **Multi-Tab / Multi-Page**: Handle complex scenarios with multiple browser tabs
+- **File Upload / Download**: Handle file operations with natural language
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
@@ -462,6 +463,57 @@ await manager.closeOtherPages();
 | Print previews | Switch to print preview windows |
 | Multi-step workflows | Compare products across tabs |
 
+## File Upload / Download
+
+Handle file uploads and downloads using natural language.
+
+### File Upload
+
+```typescript
+// Upload a single file
+await play("Upload './test-files/document.pdf' to the file input", { page, test });
+
+// Upload multiple files
+await play("Upload './images/photo1.jpg' and './images/photo2.jpg' to the file input", { page, test });
+
+// Clear file input
+await play("Clear the file input", { page, test });
+```
+
+### File Download
+
+```typescript
+// Click download and get file info
+const result = await play("Click the download button and save the file", { page, test });
+console.log(result.path); // Path to downloaded file
+
+// Download to specific location
+await play("Click 'Export PDF' and save to './downloads/report.pdf'", { page, test });
+```
+
+### Programmatic File Operations
+
+```typescript
+// Upload file
+await page.locator('input[type="file"]').setInputFiles('./document.pdf');
+
+// Download file
+const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#download-btn')
+]);
+await download.saveAs('./downloads/file.pdf');
+```
+
+### File Upload/Download Use Cases
+
+| Use Case | Example |
+|----------|---------|
+| Document upload | Upload PDF, DOCX to forms |
+| Image upload | Profile pictures, attachments |
+| Report export | Download generated reports |
+| Data export | Export CSV, Excel files |
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -538,6 +590,13 @@ tests/
     │   ├── Close pages
     │   ├── Programmatic multi-page management
     │   └── Demonstrate multi-tab use cases
+    │
+    ├── File Upload / Download Examples
+    │   ├── Demonstrate file upload concepts
+    │   ├── Demonstrate file download concepts
+    │   ├── File upload with Playwright API
+    │   ├── Demonstrate download handling patterns
+    │   └── File upload/download use cases summary
     │
     └── Complete Workflow Example
         └── Generate + Run + Auto-Heal

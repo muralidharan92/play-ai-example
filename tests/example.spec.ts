@@ -1289,6 +1289,238 @@ test.describe("Play AI - Multi-Tab / Multi-Page Examples", () => {
 });
 
 /**
+ * File Upload / Download Examples
+ * These tests demonstrate how to handle file uploads and downloads
+ */
+test.describe("Play AI - File Upload / Download Examples", () => {
+    const testFilesDir = "./test-files";
+    const downloadsDir = "./downloads";
+
+    test.beforeAll(() => {
+        // Create test files directory if it doesn't exist
+        if (!fs.existsSync(testFilesDir)) {
+            fs.mkdirSync(testFilesDir, { recursive: true });
+        }
+        // Create downloads directory if it doesn't exist
+        if (!fs.existsSync(downloadsDir)) {
+            fs.mkdirSync(downloadsDir, { recursive: true });
+        }
+        // Create a sample test file for upload demos
+        const sampleFilePath = path.join(testFilesDir, "sample.txt");
+        if (!fs.existsSync(sampleFilePath)) {
+            fs.writeFileSync(sampleFilePath, "This is a sample test file for upload testing.");
+        }
+    });
+
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Demonstrate file upload concepts", async ({ page }) => {
+        console.log("\n=== File Upload Concepts ===\n");
+
+        console.log("File upload with natural language:");
+        console.log("  await play(\"Upload './test-files/document.pdf' to the file input\", { page, test });");
+        console.log("");
+        console.log("Multiple file upload:");
+        console.log("  await play(\"Upload './images/photo1.jpg' and './images/photo2.jpg' to the file input\", { page, test });");
+        console.log("");
+        console.log("Clear file input:");
+        console.log("  await play(\"Clear the file input\", { page, test });");
+
+        console.log("\n=== Programmatic File Upload ===\n");
+
+        // Navigate to a page (saucedemo doesn't have file upload, so we'll demonstrate the concept)
+        await page.goto("https://www.saucedemo.com/");
+
+        console.log("Programmatic upload example:");
+        console.log("  await page.locator('input[type=\"file\"]').setInputFiles('./document.pdf');");
+        console.log("");
+        console.log("Multiple files:");
+        console.log("  await page.locator('input[type=\"file\"]').setInputFiles(['./file1.pdf', './file2.pdf']);");
+        console.log("");
+        console.log("Clear files:");
+        console.log("  await page.locator('input[type=\"file\"]').setInputFiles([]);");
+
+        console.log("\n✅ File upload concepts demonstrated!");
+    });
+
+    test("Demonstrate file download concepts", async ({ page }) => {
+        console.log("\n=== File Download Concepts ===\n");
+
+        console.log("File download with natural language:");
+        console.log("  const result = await play(\"Click the download button and save the file\", { page, test });");
+        console.log("  console.log(result.path); // Path to downloaded file");
+        console.log("");
+        console.log("Download to specific location:");
+        console.log("  await play(\"Click 'Export PDF' and save to './downloads/report.pdf'\", { page, test });");
+
+        console.log("\n=== Programmatic File Download ===\n");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        console.log("Wait for download event:");
+        console.log("  const [download] = await Promise.all([");
+        console.log("      page.waitForEvent('download'),");
+        console.log("      page.click('#download-btn')");
+        console.log("  ]);");
+        console.log("");
+        console.log("Save to specific path:");
+        console.log("  await download.saveAs('./downloads/file.pdf');");
+        console.log("");
+        console.log("Get download info:");
+        console.log("  const filename = download.suggestedFilename();");
+        console.log("  const url = download.url();");
+        console.log("  const path = await download.path();");
+
+        console.log("\n✅ File download concepts demonstrated!");
+    });
+
+    test("File upload with Playwright API", async ({ page }) => {
+        console.log("\n=== Playwright File Upload API ===\n");
+
+        // Create a simple HTML page with file input for testing
+        await page.setContent(`
+            <html>
+                <body>
+                    <h1>File Upload Test</h1>
+                    <input type="file" id="fileInput" />
+                    <input type="file" id="multiFileInput" multiple />
+                    <div id="result"></div>
+                    <script>
+                        document.getElementById('fileInput').addEventListener('change', (e) => {
+                            document.getElementById('result').textContent =
+                                'Single file: ' + e.target.files[0]?.name || 'No file';
+                        });
+                        document.getElementById('multiFileInput').addEventListener('change', (e) => {
+                            const names = Array.from(e.target.files).map(f => f.name).join(', ');
+                            document.getElementById('result').textContent =
+                                'Multiple files: ' + names || 'No files';
+                        });
+                    </script>
+                </body>
+            </html>
+        `);
+
+        // Upload single file using Playwright API
+        const sampleFile = path.join(testFilesDir, "sample.txt");
+        if (fs.existsSync(sampleFile)) {
+            console.log("Uploading single file...");
+            await page.locator('#fileInput').setInputFiles(sampleFile);
+
+            // Verify file was selected
+            const resultText = await page.locator('#result').textContent();
+            console.log(`Result: ${resultText}`);
+
+            // Clear the input
+            console.log("Clearing file input...");
+            await page.locator('#fileInput').setInputFiles([]);
+        }
+
+        console.log("\n✅ File upload API demonstration complete!");
+    });
+
+    test("Demonstrate download handling patterns", async ({ page }) => {
+        console.log("\n=== Download Handling Patterns ===\n");
+
+        // Create a simple page with download functionality
+        await page.setContent(`
+            <html>
+                <body>
+                    <h1>Download Test</h1>
+                    <a id="downloadLink" href="data:text/plain;charset=utf-8,Hello%20World" download="test.txt">
+                        Download Text File
+                    </a>
+                    <button id="dynamicDownload" onclick="downloadFile()">Dynamic Download</button>
+                    <script>
+                        function downloadFile() {
+                            const blob = new Blob(['Dynamic content'], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'dynamic.txt';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }
+                    </script>
+                </body>
+            </html>
+        `);
+
+        console.log("Pattern 1: Download via link click");
+        console.log("─".repeat(40));
+
+        // Wait for download when clicking the link
+        const [download1] = await Promise.all([
+            page.waitForEvent('download'),
+            page.click('#downloadLink')
+        ]);
+
+        console.log(`  Suggested filename: ${download1.suggestedFilename()}`);
+        console.log(`  URL: ${download1.url().substring(0, 50)}...`);
+
+        // Save the download
+        const savePath1 = path.join(downloadsDir, download1.suggestedFilename());
+        await download1.saveAs(savePath1);
+        console.log(`  Saved to: ${savePath1}`);
+
+        console.log("\nPattern 2: Download via button click");
+        console.log("─".repeat(40));
+
+        const [download2] = await Promise.all([
+            page.waitForEvent('download'),
+            page.click('#dynamicDownload')
+        ]);
+
+        console.log(`  Suggested filename: ${download2.suggestedFilename()}`);
+
+        const savePath2 = path.join(downloadsDir, download2.suggestedFilename());
+        await download2.saveAs(savePath2);
+        console.log(`  Saved to: ${savePath2}`);
+
+        console.log("\n✅ Download handling patterns demonstrated!");
+    });
+
+    test("File upload/download use cases summary", async ({ page }) => {
+        console.log("\n=== File Upload/Download Use Cases ===\n");
+
+        console.log("UPLOAD USE CASES:");
+        console.log("─".repeat(40));
+        console.log("  • Document upload (PDF, DOCX, etc.)");
+        console.log("  • Image upload (profile pictures, attachments)");
+        console.log("  • Bulk file upload (multiple files at once)");
+        console.log("  • CSV/Excel data import");
+        console.log("  • Form attachments");
+
+        console.log("\nDOWNLOAD USE CASES:");
+        console.log("─".repeat(40));
+        console.log("  • Report export (PDF, Excel)");
+        console.log("  • Data export (CSV, JSON)");
+        console.log("  • Invoice/receipt download");
+        console.log("  • File attachments from messages");
+        console.log("  • Backup downloads");
+
+        console.log("\nNATURAL LANGUAGE EXAMPLES:");
+        console.log("─".repeat(40));
+        console.log("  Upload:");
+        console.log("    await play(\"Upload './resume.pdf' to the file input\", { page, test });");
+        console.log("    await play(\"Upload multiple images to the gallery input\", { page, test });");
+        console.log("");
+        console.log("  Download:");
+        console.log("    await play(\"Click 'Download Report' and save the file\", { page, test });");
+        console.log("    await play(\"Export the data as CSV\", { page, test });");
+
+        console.log("\nENVIRONMENT SETUP:");
+        console.log("─".repeat(40));
+        console.log("  • Create test-files/ directory for upload test files");
+        console.log("  • Create downloads/ directory for downloaded files");
+        console.log("  • Add both directories to .gitignore");
+
+        console.log("\n================================\n");
+    });
+});
+
+/**
  * Integration Example: Code Generation + Auto-Healing
  * This demonstrates the complete workflow for low-maintenance testing
  */

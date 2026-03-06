@@ -13,3 +13,7 @@ node_modules/
 # Play AI cache
 /.play-ai-cache/
 
+# Test files and downloads
+/test-files/
+/downloads/
+
