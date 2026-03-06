@@ -3045,3 +3045,159 @@ test.describe("Play AI - Complete Workflow Example", () => {
         console.log("\n=== Workflow Complete ===\n");
     });
 });
+
+/**
+ * Smart Retry Logic Examples
+ * Demonstrates exponential backoff and intelligent retry behavior
+ */
+test.describe("Play AI - Smart Retry Logic Examples", () => {
+    test.afterEach(async ({ page }) => {
+        await page.close();
+    });
+
+    test("Basic retry configuration", async ({ page }) => {
+        console.log("\n=== Smart Retry Logic ===\n");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        // Configure retry with custom settings
+        const retryOptions = {
+            ...options,
+            retry: {
+                maxAttempts: 3,           // Try up to 3 times
+                initialDelay: 1000,       // Start with 1 second delay
+                maxDelay: 10000,          // Cap at 10 seconds
+                backoffMultiplier: 2,     // Double delay each retry
+                jitter: true              // Add randomness to prevent thundering herd
+            },
+            debug: true                   // Enable debug to see retry logs
+        };
+
+        console.log("Retry Configuration:");
+        console.log("  Max Attempts: 3");
+        console.log("  Initial Delay: 1000ms");
+        console.log("  Max Delay: 10000ms");
+        console.log("  Backoff Multiplier: 2x");
+        console.log("  Jitter: Enabled");
+
+        // Execute action with retry
+        await play(
+            `Type "standard_user" in the Username field`,
+            { page, test },
+            retryOptions
+        );
+
+        console.log("\n✅ Action completed with retry protection");
+    });
+
+    test("Environment variable configuration", async ({ page }) => {
+        console.log("\n=== Retry via Environment Variables ===\n");
+
+        console.log("Environment Variables for Retry:");
+        console.log("  PLAY_AI_RETRY=true                    # Enable retry (default)");
+        console.log("  PLAY_AI_RETRY_MAX_ATTEMPTS=3          # Max attempts");
+        console.log("  PLAY_AI_RETRY_INITIAL_DELAY=1000      # Initial delay (ms)");
+        console.log("  PLAY_AI_RETRY_MAX_DELAY=10000         # Max delay (ms)");
+        console.log("  PLAY_AI_RETRY_BACKOFF_MULTIPLIER=2    # Backoff multiplier");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        // Retry is enabled by default through environment variables
+        await play(
+            `Type "secret_sauce" in the Password field`,
+            { page, test },
+            options
+        );
+
+        console.log("\n✅ Retry enabled via environment variables");
+    });
+
+    test("Disable retry for specific actions", async ({ page }) => {
+        console.log("\n=== Disabling Retry ===\n");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        // Disable retry for specific action
+        const noRetryOptions = {
+            ...options,
+            retry: {
+                maxAttempts: 1  // Only one attempt (no retry)
+            }
+        };
+
+        console.log("Retry disabled: maxAttempts = 1");
+
+        await play(
+            `Click the Login button`,
+            { page, test },
+            noRetryOptions
+        );
+
+        console.log("\n✅ Action completed without retry (single attempt)");
+    });
+
+    test("Retry with custom error handling", async ({ page }) => {
+        console.log("\n=== Retry Error Classification ===\n");
+
+        console.log("Transient Errors (Will Retry):");
+        console.log("  - 'timeout' errors");
+        console.log("  - 'network' errors");
+        console.log("  - 'ECONNRESET' / 'ETIMEDOUT'");
+        console.log("  - Rate limiting (429)");
+        console.log("  - Service unavailable (503)");
+
+        console.log("\nPermanent Errors (No Retry):");
+        console.log("  - 'invalid selector'");
+        console.log("  - 'element not found'");
+        console.log("  - 'validation' errors");
+        console.log("  - Unauthorized (401)");
+        console.log("  - Not found (404)");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        // Execute with retry - system auto-detects retryable errors
+        await play(
+            `Type "standard_user" in the Username field`,
+            { page, test },
+            { ...options, debug: true }
+        );
+
+        console.log("\n✅ Smart error classification applied");
+    });
+
+    test("Exponential backoff demonstration", async ({ page }) => {
+        console.log("\n=== Exponential Backoff ===\n");
+
+        console.log("Backoff Calculation:");
+        console.log("  Attempt 1 → Immediate");
+        console.log("  Attempt 2 → 1000ms  (initial delay)");
+        console.log("  Attempt 3 → 2000ms  (1000 × 2)");
+        console.log("  Attempt 4 → 4000ms  (2000 × 2)");
+        console.log("  Attempt 5 → 8000ms  (4000 × 2, capped at maxDelay)");
+
+        console.log("\nWith Jitter (±maxJitter/2):");
+        console.log("  Actual delays vary randomly to prevent thundering herd");
+
+        await page.goto("https://www.saucedemo.com/");
+
+        await play(
+            [
+                `Type "standard_user" in the Username field`,
+                `Type "secret_sauce" in the Password field`,
+                `Click the Login button`
+            ],
+            { page, test },
+            {
+                ...options,
+                retry: {
+                    maxAttempts: 3,
+                    initialDelay: 500,
+                    backoffMultiplier: 2,
+                    jitter: true
+                }
+            }
+        );
+
+        console.log("\n✅ Exponential backoff with jitter active");
+    });
+});

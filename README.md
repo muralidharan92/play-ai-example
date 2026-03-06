@@ -11,6 +11,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 - **Drag and Drop**: Sortable lists, sliders, Kanban boards, resizable panels
 - **iFrame Support**: Payment forms, nested iframes, multiple iframes
 - **Shadow DOM**: Web components, custom elements, accessible interactions
+- **Smart Retry Logic**: Exponential backoff with jitter for reliable tests
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
@@ -680,6 +681,74 @@ await page.evaluate(() => {
 | Design Systems | Enterprise component libraries |
 | Third-party widgets | Encapsulated third-party components |
 
+## Smart Retry Logic
+
+Automatically retry failed actions with exponential backoff and intelligent error classification.
+
+### Basic Retry Configuration
+
+```typescript
+await play("Click the Submit button", { page, test }, {
+    retry: {
+        maxAttempts: 3,           // Try up to 3 times
+        initialDelay: 1000,       // Start with 1 second delay
+        maxDelay: 10000,          // Cap at 10 seconds
+        backoffMultiplier: 2,     // Double delay each retry
+        jitter: true              // Add randomness to prevent thundering herd
+    }
+});
+```
+
+### Environment Variable Configuration
+
+```bash
+PLAY_AI_RETRY=true                    # Enable retry (default: true)
+PLAY_AI_RETRY_MAX_ATTEMPTS=3          # Max attempts
+PLAY_AI_RETRY_INITIAL_DELAY=1000      # Initial delay (ms)
+PLAY_AI_RETRY_MAX_DELAY=10000         # Max delay (ms)
+PLAY_AI_RETRY_BACKOFF_MULTIPLIER=2    # Backoff multiplier
+```
+
+### Exponential Backoff
+
+The retry system uses exponential backoff to prevent overwhelming services:
+
+```
+Attempt 1 → Immediate
+Attempt 2 → 1000ms  (initial delay)
+Attempt 3 → 2000ms  (1000 × 2)
+Attempt 4 → 4000ms  (2000 × 2)
+Attempt 5 → 8000ms  (capped at maxDelay)
+```
+
+With jitter enabled, actual delays vary randomly to prevent thundering herd issues.
+
+### Smart Error Classification
+
+The retry system automatically classifies errors:
+
+**Transient Errors (Will Retry):**
+- Timeout errors
+- Network errors (ECONNRESET, ETIMEDOUT)
+- Rate limiting (429)
+- Service unavailable (503)
+
+**Permanent Errors (No Retry):**
+- Invalid selector
+- Element not found
+- Validation errors
+- Unauthorized (401)
+- Not found (404)
+
+### Disable Retry for Specific Actions
+
+```typescript
+// Single attempt, no retry
+await play("Click the Delete button", { page, test }, {
+    retry: { maxAttempts: 1 }
+});
+```
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -696,6 +765,11 @@ await page.evaluate(() => {
 | `PLAY_AI_CACHE_DIR` | Cache directory | `.play-ai-cache` |
 | `PLAY_AI_CACHE_TTL` | Cache TTL in seconds | `86400` (24 hours) |
 | `PLAY_AI_CACHE_STRATEGY` | Cache strategy | `aggressive`, `conservative`, `off` |
+| `PLAY_AI_RETRY` | Enable retry logic | `true` (default) |
+| `PLAY_AI_RETRY_MAX_ATTEMPTS` | Maximum retry attempts | `3` |
+| `PLAY_AI_RETRY_INITIAL_DELAY` | Initial retry delay (ms) | `1000` |
+| `PLAY_AI_RETRY_MAX_DELAY` | Maximum retry delay (ms) | `10000` |
+| `PLAY_AI_RETRY_BACKOFF_MULTIPLIER` | Backoff multiplier | `2` |
 | `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
 | `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
 | `GEMINI_API_KEY` | Google Gemini API key | `...` |
