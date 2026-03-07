@@ -13,6 +13,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 - **Shadow DOM**: Web components, custom elements, accessible interactions
 - **Smart Retry Logic**: Exponential backoff with jitter for reliable tests
 - **Visual Testing**: Screenshot comparison with AI-powered diff analysis
+- **Test Recording**: Record browser interactions and generate tests automatically
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
@@ -823,6 +824,146 @@ npx play-ai visual cleanup ./screenshots/ --days 7
 | `aiAnalysis.severity` | none / minor / moderate / major / critical |
 | `aiAnalysis.isRegression` | Whether this is likely a bug |
 
+## Test Recording
+
+Record browser interactions and automatically generate play-ai or Playwright tests. Perfect for creating tests quickly without writing code.
+
+### CLI Usage
+
+```bash
+# Start recording session (opens browser)
+npx play-ai record https://example.com
+
+# Specify output file
+npx play-ai record https://example.com --output ./tests/login.spec.ts
+
+# Generate Playwright-only code (no play-ai dependency)
+npx play-ai record https://example.com --format playwright
+
+# Generate both formats
+npx play-ai record https://example.com --format both
+
+# Choose browser
+npx play-ai record https://example.com --browser firefox
+
+# Emulate device
+npx play-ai record https://example.com --device "iPhone 12"
+```
+
+### Programmatic API
+
+```typescript
+import { startRecording, stopRecording, getRecordingSession } from "play-ai";
+
+// Start recording
+const session = await startRecording({
+    url: "https://example.com",
+    outputFormat: "play-ai",  // play-ai | playwright | both
+    outputPath: "./tests/recorded.spec.ts",
+    browser: "chromium",
+    headless: false
+});
+
+// ... user interacts with browser ...
+
+// Get current session info
+const currentSession = getRecordingSession();
+console.log(`Recorded ${currentSession?.actions.length} actions`);
+
+// Stop and generate test file
+await stopRecording(session);
+```
+
+### Recording Controls
+
+```typescript
+import {
+    pauseRecording,
+    resumeRecording,
+    addCustomAction,
+    undoLastAction,
+    clearRecordedActions
+} from "play-ai";
+
+// Pause/resume recording
+await pauseRecording();
+await resumeRecording();
+
+// Add custom action (e.g., assertion)
+await addCustomAction({
+    type: "assertion",
+    description: "Verify login success",
+    selector: ".welcome-message"
+});
+
+// Undo last recorded action
+await undoLastAction();
+
+// Clear all recorded actions
+await clearRecordedActions();
+```
+
+### Generated Output Formats
+
+**play-ai format:**
+```typescript
+import { test } from "@playwright/test";
+import { play } from "play-ai";
+
+test("Recorded: User login flow", async ({ page }) => {
+    await page.goto("https://example.com");
+    await play("Click the username input field", { page, test });
+    await play('Type "testuser" in the username field', { page, test });
+    await play("Click the Login button", { page, test });
+});
+```
+
+**Playwright format:**
+```typescript
+import { test, expect } from "@playwright/test";
+
+test("Recorded: User login flow", async ({ page }) => {
+    await page.goto("https://example.com");
+    await page.locator('[data-test="username"]').click();
+    await page.locator('[data-test="username"]').fill("testuser");
+    await page.locator('[data-test="login-button"]').click();
+});
+```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--output, -o <path>` | Output file path (default: ./tests/recorded.spec.ts) |
+| `--format, -f <fmt>` | Output format: play-ai, playwright, both |
+| `--browser, -b <name>` | Browser: chromium, firefox, webkit |
+| `--device, -d <name>` | Device to emulate (e.g., "iPhone 12") |
+| `--test-name, -n` | Name for the generated test |
+| `--headed` | Run browser in headed mode (default) |
+| `--headless` | Run browser in headless mode |
+| `--debug` | Enable debug output |
+
+### Selector Generation Strategy
+
+The recorder generates robust selectors following Playwright's recommended priority:
+
+1. **Test IDs** - `[data-testid="..."]`, `[data-test="..."]`
+2. **ARIA Roles** - `getByRole('button', { name: '...' })`
+3. **Labels** - `getByLabel('...')`
+4. **Placeholders** - `getByPlaceholder('...')`
+5. **Text Content** - `getByText('...')`
+6. **CSS Selectors** - As fallback
+
+### Use Cases
+
+| Use Case | Description |
+|----------|-------------|
+| Quick test creation | Record user flows without writing code |
+| Non-technical users | QA team can create tests by interaction |
+| Baseline generation | Record existing flows before refactoring |
+| Documentation | Generate tests that document application behavior |
+| Migration | Convert manual test cases to automated tests |
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -937,6 +1078,16 @@ tests/
     │   ├── Shadow DOM form components
     │   ├── Using getByRole with shadow DOM
     │   └── Shadow DOM use cases summary
+    │
+    ├── Test Recording Examples
+    │   ├── Test recording overview
+    │   ├── CLI usage for test recording
+    │   ├── Programmatic recording API
+    │   ├── Recording options reference
+    │   ├── Generated test formats comparison
+    │   ├── Selector generation strategies
+    │   ├── Recording workflow example
+    │   └── Recording use cases
     │
     └── Complete Workflow Example
         └── Generate + Run + Auto-Heal

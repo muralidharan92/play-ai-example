@@ -3322,3 +3322,224 @@ test.describe("Play AI - Visual Testing Examples", () => {
         console.log("\n✅ Environment variables documented");
     });
 });
+
+/**
+ * Test Recording Examples
+ * Demonstrates how to record browser interactions and generate tests
+ */
+test.describe("Play AI - Test Recording Examples", () => {
+    test("Test recording overview", async ({ page }) => {
+        console.log("\n=== Test Recording Overview ===\n");
+
+        console.log("Test Recording allows you to:");
+        console.log("  1. Record browser interactions in real-time");
+        console.log("  2. Automatically generate selectors for elements");
+        console.log("  3. Generate play-ai or pure Playwright tests");
+        console.log("  4. Export to standalone test files");
+
+        console.log("\nSupported Formats:");
+        console.log("  - play-ai:    Natural language tests using play() function");
+        console.log("  - playwright: Pure Playwright tests (no AI needed after recording)");
+        console.log("  - both:       Generate both formats side by side");
+
+        console.log("\n✅ Overview documented");
+    });
+
+    test("CLI usage for test recording", async ({ page }) => {
+        console.log("\n=== Test Recording CLI Usage ===\n");
+
+        console.log("Basic Recording:");
+        console.log("  npx play-ai record https://example.com");
+        console.log("");
+        console.log("With Options:");
+        console.log("  npx play-ai record https://example.com --output ./tests/login.spec.ts");
+        console.log("  npx play-ai record https://example.com --format playwright");
+        console.log("  npx play-ai record https://example.com --format both");
+        console.log("  npx play-ai record https://example.com --browser firefox");
+        console.log('  npx play-ai record https://example.com --device "iPhone 12"');
+        console.log("");
+        console.log("Workflow:");
+        console.log("  1. Run: npx play-ai record https://example.com");
+        console.log("  2. Interact with the browser (click, type, navigate)");
+        console.log("  3. Press Ctrl+C to stop recording");
+        console.log("  4. Test file is generated automatically");
+        console.log("  5. Run: npx playwright test ./tests/recorded.spec.ts");
+
+        console.log("\n✅ CLI usage documented");
+    });
+
+    test("Programmatic recording API", async ({ page }) => {
+        console.log("\n=== Programmatic Recording API ===\n");
+
+        console.log("Import Functions:");
+        console.log('  import {');
+        console.log('      startRecording,');
+        console.log('      stopRecording,');
+        console.log('      pauseRecording,');
+        console.log('      resumeRecording,');
+        console.log('      isRecordingActive,');
+        console.log('      getRecordedActionCount');
+        console.log('  } from "play-ai";');
+
+        console.log("\nStart Recording:");
+        console.log("  const session = await startRecording({");
+        console.log('      url: "https://example.com",');
+        console.log('      outputFormat: "play-ai",  // or "playwright" | "both"');
+        console.log('      outputPath: "./tests/recorded.spec.ts",');
+        console.log("      headed: true,");
+        console.log('      browser: "chromium",');
+        console.log("      debug: true");
+        console.log("  });");
+
+        console.log("\nStop and Generate:");
+        console.log("  const result = await stopRecording();");
+        console.log('  // result.code contains the generated test');
+        console.log('  // result.outputPath is where it was saved');
+
+        console.log("\n✅ Programmatic API documented");
+    });
+
+    test("Recording options reference", async ({ page }) => {
+        console.log("\n=== Recording Options Reference ===\n");
+
+        console.log("RecordingOptions Interface:");
+        console.log("  {");
+        console.log('    url: string,                   // URL to record (required)');
+        console.log('    outputFormat: "play-ai" | "playwright" | "both",');
+        console.log('    outputPath: string,            // Output file path');
+        console.log('    headed: boolean,               // Show browser (default: true)');
+        console.log('    browser: "chromium" | "firefox" | "webkit",');
+        console.log('    viewport: { width, height },   // Browser viewport');
+        console.log('    device: string,                // Device to emulate');
+        console.log('    includeScreenshots: boolean,   // Capture screenshots');
+        console.log('    debounceMs: number,            // Debounce rapid actions');
+        console.log('    ignoreSelectors: string[],     // Selectors to ignore');
+        console.log('    testName: string,              // Generated test name');
+        console.log('    testDescribe: string,          // Describe block name');
+        console.log('    includeComments: boolean,      // Include action comments');
+        console.log('    debug: boolean                 // Debug output');
+        console.log("  }");
+
+        console.log("\n✅ Options reference documented");
+    });
+
+    test("Generated test formats comparison", async ({ page }) => {
+        console.log("\n=== Generated Test Formats ===\n");
+
+        console.log("play-ai Format:");
+        console.log("  Pros:");
+        console.log("    - Human-readable natural language");
+        console.log("    - Easy to modify and understand");
+        console.log("    - Self-healing with AI");
+        console.log("  Cons:");
+        console.log("    - Requires AI API for execution");
+        console.log("    - Slightly slower execution");
+        console.log("");
+        console.log("  Example:");
+        console.log('    await play("Click the Login button", { page, test });');
+        console.log('    await play(\'Type "user" in the username field\', { page, test });');
+
+        console.log("\nplaywright Format:");
+        console.log("  Pros:");
+        console.log("    - No AI dependency after recording");
+        console.log("    - Faster execution");
+        console.log("    - Works offline");
+        console.log("  Cons:");
+        console.log("    - Less readable selectors");
+        console.log("    - Manual selector maintenance");
+        console.log("");
+        console.log("  Example:");
+        console.log("    await page.locator('[data-testid=\"login-btn\"]').click();");
+        console.log("    await page.locator('#username').fill(\"user\");");
+
+        console.log("\n✅ Format comparison documented");
+    });
+
+    test("Selector generation strategies", async ({ page }) => {
+        console.log("\n=== Selector Generation Strategies ===\n");
+
+        console.log("The recorder generates selectors in priority order:");
+        console.log("");
+        console.log("1. Test IDs (Highest Priority)");
+        console.log('   [data-testid="login-button"]');
+        console.log('   [data-test="username-input"]');
+        console.log("");
+        console.log("2. Role-Based Selectors");
+        console.log("   getByRole('button', { name: 'Login' })");
+        console.log("   getByRole('textbox', { name: 'Email' })");
+        console.log("");
+        console.log("3. Label Selectors");
+        console.log("   getByLabel('Email address')");
+        console.log("   getByLabel('Password')");
+        console.log("");
+        console.log("4. Placeholder Selectors");
+        console.log("   getByPlaceholder('Enter your email')");
+        console.log("");
+        console.log("5. Text Selectors");
+        console.log("   getByText('Submit')");
+        console.log("   getByText('Sign In')");
+        console.log("");
+        console.log("6. CSS Selectors (Fallback)");
+        console.log("   #login-form");
+        console.log("   .submit-button");
+
+        console.log("\n✅ Selector strategies documented");
+    });
+
+    test("Recording workflow example", async ({ page }) => {
+        console.log("\n=== Recording Workflow Example ===\n");
+
+        console.log("Step 1: Start Recording");
+        console.log("  $ npx play-ai record https://www.saucedemo.com");
+        console.log("");
+        console.log("Step 2: Interact with Page");
+        console.log('  - Click username field');
+        console.log('  - Type "standard_user"');
+        console.log('  - Click password field');
+        console.log('  - Type "secret_sauce"');
+        console.log('  - Click Login button');
+        console.log("");
+        console.log("Step 3: Stop Recording (Ctrl+C)");
+        console.log("");
+        console.log("Step 4: Generated Test (play-ai format):");
+        console.log('  test("Recorded Test", async ({ page }) => {');
+        console.log('      await play("Click the text input Username", { page, test });');
+        console.log('      await play(\'Type "standard_user" in the Username field\', { page, test });');
+        console.log('      await play("Click the password input", { page, test });');
+        console.log('      await play(\'Type "secret_sauce" in the password field\', { page, test });');
+        console.log('      await play("Click the button Login", { page, test });');
+        console.log("  });");
+        console.log("");
+        console.log("Step 5: Run Generated Test");
+        console.log("  $ npx playwright test ./tests/recorded.spec.ts");
+
+        console.log("\n✅ Workflow example documented");
+    });
+
+    test("Recording use cases", async ({ page }) => {
+        console.log("\n=== Test Recording Use Cases ===\n");
+
+        console.log("1. Rapid Test Prototyping");
+        console.log("   - Quickly create tests for new features");
+        console.log("   - Iterate on test scenarios interactively");
+        console.log("");
+        console.log("2. Non-Technical Users");
+        console.log("   - QA teams can create tests without coding");
+        console.log("   - Product managers can document flows");
+        console.log("");
+        console.log("3. Regression Test Creation");
+        console.log("   - Record user flows for regression suite");
+        console.log("   - Convert manual tests to automation");
+        console.log("");
+        console.log("4. Learning & Documentation");
+        console.log("   - Learn Playwright selectors by example");
+        console.log("   - Document application flows");
+        console.log("");
+        console.log("5. Cross-Format Generation");
+        console.log("   - Generate play-ai for maintenance");
+        console.log("   - Generate Playwright for performance");
+        console.log("   - Use both for comparison");
+
+        console.log("\n================================\n");
+    });
+});
