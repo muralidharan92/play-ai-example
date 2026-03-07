@@ -14,6 +14,7 @@ Example project demonstrating how to use [play-ai](https://github.com/muralidhar
 - **Smart Retry Logic**: Exponential backoff with jitter for reliable tests
 - **Visual Testing**: Screenshot comparison with AI-powered diff analysis
 - **Test Recording**: Record browser interactions and generate tests automatically
+- **Test Data Generation**: Generate realistic test data (16 locales, 25+ patterns)
 - **Code Generation**: Generate standalone Playwright tests (no AI after first run!)
 - **Auto-Healing Selectors**: Automatically fix broken selectors (low maintenance!)
 - **Parallel Execution**: Extract multiple data points concurrently
@@ -964,6 +965,84 @@ The recorder generates robust selectors following Playwright's recommended prior
 | Documentation | Generate tests that document application behavior |
 | Migration | Convert manual test cases to automated tests |
 
+## Test Data Generation
+
+Generate realistic test data for forms, APIs, and test scenarios. Supports 16 locales and 25+ built-in patterns.
+
+### Basic Usage
+
+```typescript
+import { generateTestData, fillFormWithAI } from "play-ai";
+
+// Generate test data
+const userData = generateTestData({
+    fields: ["firstName", "lastName", "email", "phone", "address"],
+    locale: "en-US",
+    context: "e-commerce"
+});
+
+console.log(userData.data[0]);
+// { firstName: "James", lastName: "Smith", email: "james.smith42@gmail.com", ... }
+```
+
+### Fill Forms Automatically
+
+```typescript
+// Auto-analyze and fill a form
+const result = await fillFormWithAI(page, {
+    formSelector: "#checkout-form",
+    dataType: "checkout",
+    locale: "en-US"
+});
+
+console.log(result.filledData);    // Data that was filled
+console.log(result.filledFields);  // Selectors that were filled
+```
+
+### Locale Support
+
+Generate data in 16 different locales:
+
+| Locale | Country |
+|--------|---------|
+| en-US | United States |
+| en-GB | United Kingdom |
+| en-AU | Australia |
+| de-DE | Germany |
+| fr-FR | France |
+| es-ES | Spain |
+| ja-JP | Japan |
+| zh-CN | China |
+| And 8 more... | |
+
+### Pattern Templates
+
+```typescript
+import { patterns, processPattern } from "play-ai";
+
+// Built-in patterns
+patterns.email()      // "john.doe42@gmail.com"
+patterns.phone()      // "(555) 123-4567"
+patterns.password()   // "ABcdef12!@"
+patterns.creditCard() // "4242 4242 4242 4242"
+patterns.uuid()       // "550e8400-e29b-41d4..."
+
+// Custom patterns
+processPattern("ORD-{{year:4}}{{month}}{{day}}-{{digit:4}}");
+// "ORD-20260307-1234"
+```
+
+### Supported Field Types
+
+| Category | Types |
+|----------|-------|
+| Personal | firstName, lastName, fullName, email, phone, dateOfBirth, age |
+| Address | address, street, city, state, zipCode, country |
+| Professional | company, jobTitle, username, password |
+| Financial | creditCard, cvv, expiryDate, ssn |
+| Technical | url, uuid, number, boolean, date |
+| Text | paragraph, sentence, word |
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -1088,6 +1167,16 @@ tests/
     │   ├── Selector generation strategies
     │   ├── Recording workflow example
     │   └── Recording use cases
+    │
+    ├── Test Data Generation Examples
+    │   ├── Generate basic test data
+    │   ├── Generate data with multiple locales
+    │   ├── Generate multiple records
+    │   ├── Field types reference
+    │   ├── Pattern templates
+    │   ├── Fill forms automatically
+    │   ├── Analyze form structure
+    │   └── Test data generation use cases
     │
     └── Complete Workflow Example
         └── Generate + Run + Auto-Heal

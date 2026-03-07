@@ -3543,3 +3543,214 @@ test.describe("Play AI - Test Recording Examples", () => {
         console.log("\n================================\n");
     });
 });
+
+/**
+ * Test Data Generation Examples
+ * Demonstrates how to generate realistic test data
+ */
+test.describe("Play AI - Test Data Generation Examples", () => {
+    test("Generate basic test data", async ({ page }) => {
+        console.log("\n=== Basic Test Data Generation ===\n");
+
+        console.log("Generate user data:");
+        console.log('  import { generateTestData } from "play-ai";');
+        console.log("");
+        console.log("  const userData = generateTestData({");
+        console.log('      fields: ["firstName", "lastName", "email", "phone"],');
+        console.log('      locale: "en-US"');
+        console.log("  });");
+        console.log("");
+        console.log("  // Result:");
+        console.log("  // {");
+        console.log('  //   firstName: "James",');
+        console.log('  //   lastName: "Smith",');
+        console.log('  //   email: "james.smith42@gmail.com",');
+        console.log('  //   phone: "(555) 123-4567"');
+        console.log("  // }");
+
+        console.log("\n✅ Basic generation documented");
+    });
+
+    test("Generate data with multiple locales", async ({ page }) => {
+        console.log("\n=== Multi-Locale Data Generation ===\n");
+
+        console.log("Supported Locales (16 total):");
+        console.log("  - en-US: United States");
+        console.log("  - en-GB: United Kingdom");
+        console.log("  - en-AU: Australia");
+        console.log("  - en-CA: Canada");
+        console.log("  - de-DE: Germany");
+        console.log("  - fr-FR: France");
+        console.log("  - es-ES: Spain");
+        console.log("  - it-IT: Italy");
+        console.log("  - pt-BR: Brazil");
+        console.log("  - ja-JP: Japan");
+        console.log("  - zh-CN: China");
+        console.log("  - ko-KR: South Korea");
+        console.log("  - ru-RU: Russia");
+        console.log("  - nl-NL: Netherlands");
+        console.log("  - pl-PL: Poland");
+        console.log("  - sv-SE: Sweden");
+
+        console.log("\nExample - German data:");
+        console.log("  const deData = generateTestData({");
+        console.log('      fields: ["firstName", "lastName", "city"],');
+        console.log('      locale: "de-DE"');
+        console.log("  });");
+        console.log('  // { firstName: "Maximilian", lastName: "Muller", city: "Berlin" }');
+
+        console.log("\n✅ Multi-locale documented");
+    });
+
+    test("Generate multiple records", async ({ page }) => {
+        console.log("\n=== Generate Multiple Records ===\n");
+
+        console.log("Generate 10 user records:");
+        console.log("  const users = generateTestData({");
+        console.log('      fields: ["firstName", "lastName", "email"],');
+        console.log("      count: 10");
+        console.log("  });");
+        console.log("");
+        console.log("  console.log(users.data.length); // 10");
+        console.log("  users.data.forEach(user => {");
+        console.log("      console.log(user.email);");
+        console.log("  });");
+
+        console.log("\n✅ Multiple records documented");
+    });
+
+    test("Field types reference", async ({ page }) => {
+        console.log("\n=== Supported Field Types ===\n");
+
+        console.log("Personal Information:");
+        console.log("  - firstName, lastName, fullName");
+        console.log("  - email, phone");
+        console.log("  - dateOfBirth, age");
+        console.log("");
+        console.log("Address:");
+        console.log("  - address, street");
+        console.log("  - city, state, zipCode, country");
+        console.log("");
+        console.log("Professional:");
+        console.log("  - company, jobTitle");
+        console.log("  - username, password");
+        console.log("");
+        console.log("Financial:");
+        console.log("  - creditCard, cvv, expiryDate");
+        console.log("  - ssn");
+        console.log("");
+        console.log("Technical:");
+        console.log("  - url, uuid");
+        console.log("  - number, boolean");
+        console.log("  - date");
+        console.log("");
+        console.log("Text:");
+        console.log("  - paragraph, sentence, word");
+
+        console.log("\n✅ Field types documented");
+    });
+
+    test("Pattern templates", async ({ page }) => {
+        console.log("\n=== Pattern Templates ===\n");
+
+        console.log("Built-in Patterns:");
+        console.log('  import { patterns, processPattern } from "play-ai";');
+        console.log("");
+        console.log("  patterns.email()      // john.doe42@gmail.com");
+        console.log("  patterns.phone()      // (555) 123-4567");
+        console.log("  patterns.password()   // ABcdef12!@");
+        console.log("  patterns.creditCard() // 4242 4242 4242 4242");
+        console.log("  patterns.ssn()        // 123-45-6789");
+        console.log("  patterns.zip()        // 90210");
+        console.log("  patterns.uuid()       // 550e8400-e29b-41d4...");
+        console.log("  patterns.date()       // 2026-03-07");
+
+        console.log("\nCustom Patterns:");
+        console.log('  processPattern("ORD-{{year:4}}{{month}}{{day}}-{{digit:4}}")');
+        console.log("  // ORD-20260307-1234");
+        console.log("");
+        console.log('  processPattern("{{upper:3}}-{{digit:4}}-{{upper:2}}")');
+        console.log("  // ABC-1234-XY");
+
+        console.log("\n✅ Patterns documented");
+    });
+
+    test("Fill forms automatically", async ({ page }) => {
+        console.log("\n=== Auto-Fill Forms ===\n");
+
+        console.log("Fill a form with generated data:");
+        console.log('  import { fillFormWithAI } from "play-ai";');
+        console.log("");
+        console.log("  const result = await fillFormWithAI(page, {");
+        console.log('      formSelector: "#checkout-form",');
+        console.log('      dataType: "checkout",');
+        console.log('      locale: "en-US"');
+        console.log("  });");
+        console.log("");
+        console.log("  console.log(result.filledData);   // Data filled");
+        console.log("  console.log(result.filledFields); // Selectors filled");
+        console.log("  console.log(result.success);      // true/false");
+
+        console.log("\nWith custom field mapping:");
+        console.log("  await fillFormWithAI(page, {");
+        console.log('      formSelector: "form",');
+        console.log("      fieldMapping: {");
+        console.log('          "user_name": "username",');
+        console.log('          "user_email": "email"');
+        console.log("      }");
+        console.log("  });");
+
+        console.log("\n✅ Form filling documented");
+    });
+
+    test("Analyze form structure", async ({ page }) => {
+        console.log("\n=== Form Analysis ===\n");
+
+        console.log("Analyze form to detect fields:");
+        console.log('  import { analyzeForm } from "play-ai";');
+        console.log("");
+        console.log("  const analysis = await analyzeForm(page, '#login-form');");
+        console.log("");
+        console.log("  console.log(analysis.fields);");
+        console.log("  // [");
+        console.log("  //   { selector: '#email', inferredType: 'email', required: true },");
+        console.log("  //   { selector: '#password', inferredType: 'password', required: true }");
+        console.log("  // ]");
+        console.log("");
+        console.log("  console.log(analysis.formType);     // 'login'");
+        console.log("  console.log(analysis.submitButton); // 'button[type=\"submit\"]'");
+
+        console.log("\n✅ Form analysis documented");
+    });
+
+    test("Test data generation use cases", async ({ page }) => {
+        console.log("\n=== Test Data Use Cases ===\n");
+
+        console.log("1. E-commerce Checkout");
+        console.log("   - Generate customer data");
+        console.log("   - Generate shipping addresses");
+        console.log("   - Generate payment details");
+        console.log("");
+        console.log("2. User Registration");
+        console.log("   - Generate realistic user profiles");
+        console.log("   - Support multiple locales");
+        console.log("   - Generate valid passwords");
+        console.log("");
+        console.log("3. API Testing");
+        console.log("   - Generate test payloads");
+        console.log("   - Generate multiple records for load testing");
+        console.log("   - Use seeds for reproducibility");
+        console.log("");
+        console.log("4. Form Validation Testing");
+        console.log("   - Generate edge case data");
+        console.log("   - Test with various formats");
+        console.log("   - Include null values randomly");
+        console.log("");
+        console.log("5. Internationalization Testing");
+        console.log("   - Test with different locales");
+        console.log("   - Verify address formats");
+        console.log("   - Check phone number formats");
+
+        console.log("\n================================\n");
+    });
+});
